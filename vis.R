@@ -317,7 +317,7 @@ reg_cv_gdsc = cv_all_gdsc |>
   metrics_reg(ic50, pred)
 
 lst_cv_gdsc = rawPic(reg_cv_gdsc, '.metric')
-pic_cv_gdsc = mergePics(lst_cv_gdsc, fun_ = color_manual)
+pic_cv_gdsc = mergePics(lst_cv_gdsc, fun_ = jitter_color)
 
 # cell
 reg_cell_gdsc = cv_all |>
@@ -353,6 +353,7 @@ ggsave('scratch/a.png', a, width = 28/sizef, height = 10/sizef)
 
 library(ggbreak)
 library(viridis)
+library(ggpointdensity)
 
 score_drug_ccle = cv_all |> 
   group_by(drug) |> 
@@ -369,7 +370,7 @@ drug_gdsc = names(sort(unlist(score_drug_gdsc), decreasing = T)[1:40])
 
 drug_all = intersect(drug_ccle, drug_gdsc)
 
-tibble(
+pic_drug = tibble(
   drug = factor(c(drug_all, drug_all), levels = drug_all), 
   cor = c(score_drug_ccle[drug_all], score_drug_gdsc[drug_all]), 
   dataset = rep(c('CCLE', 'GDSC'), each = length(drug_all))
@@ -383,4 +384,38 @@ tibble(
   theme_classic() +
   theme(# axis.text.y = element_text(angle = 30, vjust = 0.85, hjust = 0.75), 
         axis.text.x = element_text(angle = 30, vjust = 0.85, hjust = 0.75), 
-        axis.title.x = element_text(family = "mono", face = "bold"))
+        axis.title.x = element_text(family = "mono", face = "bold"), legend.position = 'top')
+
+ggsave('result/pic_drug.png', pic_drug, width = 8, height = 6)
+
+stat_ccle = cor.test(cv_all$ic50, cv_all$pred, method = 'spearman')
+pic_density_ccle = cv_all |> 
+  slice_sample(n = 100000) |> 
+  ggplot(aes(ic50, pred)) +
+  geom_pointdensity(adjust = 0.1, alpha = 0.7) +
+  geom_text(aes(x, y, label = label), data = tibble(x = -4, y = 9, label = sprintf('Spearman\'s r = %.3f', stat_ccle$estimate)), inherit.aes = F) +
+  # geom_smooth(method = 'lm', formula = y~x, se = TRUE, linewidth = 2, show.legend = FALSE, color = "black", alpha = 0.5) +
+  scale_color_viridis() + 
+  xlab('Measured LN IC50(CCLE)') +
+  ylab('Predicted LN IC50(CCLE)') +
+  theme_classic() +
+  theme(legend.position = 'none')
+
+ggsave('result/pic_density_ccle.png', pic_density_ccle, width = 4, height = 4)
+  
+stat_gdsc = cor.test(cv_all_gdsc$ic50, cv_all_gdsc$pred, method = 'spearman')
+pic_density_gdsc = cv_all_gdsc |> 
+  slice_sample(n = 100000) |> 
+  ggplot(aes(ic50, pred)) +
+  geom_pointdensity(adjust = 0.1, alpha = 0.7) +
+  geom_text(aes(x, y, label = label), data = tibble(x = -4, y = 9, label = sprintf('Spearman\'s r = %.3f', stat_gdsc$estimate)), inherit.aes = F) +
+  # geom_smooth(method = 'lm', formula = y~x, se = TRUE, linewidth = 2, show.legend = FALSE, color = "black", alpha = 0.5) +
+  scale_color_viridis() + 
+  xlab('Measured LN IC50(GDSC)') +
+  ylab('Predicted LN IC50(GDSC)') +
+  theme_classic() +
+  theme(legend.position = 'none')
+
+ggsave('result/pic_density_gdsc.png', pic_density_gdsc, width = 4, height = 4)
+
+
