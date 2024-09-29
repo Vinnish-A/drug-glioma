@@ -23,11 +23,11 @@ from utils.TrainConfig import *
 sample_all = pd.read_csv('Dataset/GDSC2.csv', sep='\t')
 
 sampler = setup_seed(seed)
-splits = split(sample_all.shape[0])
+# splits = split(sample_all.shape[0])
+# joblib.dump(splits, 'checkpoint/splits_GDSC.pkl')
+splits = joblib.load('checkpoint/splits_GDSC.pkl')
 loss_func = nn.MSELoss()
 metrics_dict = {'MSE': MeanSquaredError().to(DEVICE)}
-
-# joblib.dump(splits, 'checkpoint/splits_GDSC.pkl')
 
 res_history_mine = []
 res_pairs_mine = []

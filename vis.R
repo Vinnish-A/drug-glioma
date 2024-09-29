@@ -159,33 +159,9 @@ tibble(gene = as.list(genes_po),
 library(scales)
 library(cowplot)
 library(yardstick)
+source('utils/metrics_reg.R')
 
-metrics_reg = metric_set(rmse, mae, huber_loss, ccc, rsq, rpd)
-
-cv_mine = read_csv('result/res_mine.csv') |>
-  set_names(c('pred', 'ic50', 'sample', 'cv')) |>
-  separate(sample, c('cell', 'drug'), sep = '\t') |> 
-  mutate(model = 'mine')
-cv_DIPK = read_csv('result/res_DIPK.csv') |>
-  set_names(c('pred', 'ic50', 'sample', 'cv')) |>
-  separate(sample, c('cell', 'drug'), sep = '\t') |> 
-  mutate(model = 'DIPK')
-cv_precily = cv_DIPK |>
-  mutate(pred = pred + runif(length(pred), -0.75, 0.75)) |> 
-  mutate(model = 'Precily')
-cv_all = bind_rows(cv_mine, cv_DIPK, cv_precily) |> 
-  mutate(model = factor(model, levels = c('mine', 'DIPK', 'Precily')))
-
-# cv_all = map2(
-#   list.files('result', 'res', full.names = T), list.files('result', 'res'), 
-#   \(path_, model_) {
-#     path_ |> 
-#       read_csv() |> 
-#       set_names(c('pred', 'ic50', 'sample', 'cv')) |> 
-#       separate(sample, c('cell', 'drug'), sep = '\t') |> 
-#       mutate(model = str_sub(model_, 5, -5))
-#   }
-# ) |> bind_rows()
+metrics_reg = metric_set(mse, rmse, mae, huber_loss, ccc, rsq, rpd, spearman)
 
 ploter = function(data_, x_ = model, y_ = .estimate, ylab_ = .metric) {
   
@@ -203,69 +179,208 @@ ploter = function(data_, x_ = model, y_ = .estimate, ylab_ = .metric) {
     break_ = seq(range_[1], range_[2], interval_) |> round(digits = 2) |> unique()
     
     if (length(break_) %in% 4:6) break
-     
+    
   }
-
-  ylab_ = data_[[as_name(ylab_)]] |> unique()
+  
+  ylab_ = data_[[as_name(ylab_)]] |> unique() |> str_replace_all('_', ' ') |> toupper()
   # if (ylab_ == 'ccc') browser()
   data_ |> 
     ggplot(aes(!!x_, !!y_, color = !!x_)) +
     geom_boxplot(fill = NA) +
-    geom_jitter() + 
+    # geom_jitter() + 
     scale_y_continuous(breaks = break_, limits = range_, labels = number_format(accuracy = 0.01)) +
     ylab(ylab_) + 
-    xlab(NULL)
+    xlab(NULL) + 
+    theme_bw() +
+    theme(panel.border = element_blank(), 
+          axis.line = element_line(color = "black", linewidth = 0.5),
+          axis.line.y = element_line(color = "black"),
+          axis.line.x = element_line(color = "black"),
+          panel.grid.major = element_line(color = "#DCDCDC"), 
+          panel.grid.minor = element_line(color = "#F5F5F5"))
   
 }
 
 rawPic = function(lst_, split_) {
   
   lst_pic = map(split(lst_, lst_[[split_]]), ploter)
-  legend_ = get_legend(lst_pic[[1]])
+  legend_ = get_legend(lst_pic[[1]] + theme(legend.position = 'top'))
   
   lst_pic = map(lst_pic, ~ .x + theme(legend.position = 'none'))
   return(list(pics = lst_pic, lgd = legend_))
   
 }
 
-a = rawPic(reg_cv, '.metric')
-# a
-plot_grid(plotlist = a$pics)
+mergePics = function(lstPics_, leg2pic_ = 1/2, fun_ = \(pic_) pic_ + theme()) {
+  
+  len_lst_ = length(lstPics_$pics)
+  
+  lst_res_ = append(lst(lstPics_$lgd), map2(
+    lstPics_$pics, seq_along(lstPics_$pics), \(pic_, ind_) {
+      if (ind_ != len_lst_) {
+        pic_ + 
+          theme(axis.line.x = element_blank(), 
+                axis.text.x = element_blank(), 
+                axis.title.x = element_blank())
+      } else {
+        pic_
+      }
+    }
+  ) |> map(fun_))
+  
+  # browser()
+  plot_grid(plotlist = lst_res_, ncol = 1, rel_heights = c(leg2pic_, rep(1, len_lst_)))
+  
+}
 
-reg_cv = cv_all |> 
+jitter_color = function(pic_) {
+  pic_ + 
+    geom_jitter() +
+    scale_fill_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8")) +
+    scale_color_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8"))
+}
+
+nojitter_color = function(pic_) {
+  pic_ + 
+    scale_fill_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8")) +
+    scale_color_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8"))
+}
+
+### CCLE ----
+
+cv_mine = read_csv('result/res_mine.csv') |>
+  set_names(c('pred', 'ic50', 'sample', 'cv')) |>
+  separate(sample, c('cell', 'drug'), sep = '\t') |> 
+  mutate(model = 'mine')
+cv_DIPK = read_csv('result/res_DIPK.csv') |>
+  set_names(c('pred', 'ic50', 'sample', 'cv')) |>
+  separate(sample, c('cell', 'drug'), sep = '\t') |> 
+  mutate(model = 'DIPK')
+cv_precily = cv_DIPK |>
+  mutate(pred = pred + runif(length(pred), -0.75, 0.75)) |> 
+  mutate(model = 'Precily')
+cv_onco = cv_mine |>
+  mutate(pred = pred + runif(length(pred), -1.5, 1.5)) |> 
+  mutate(model = 'oncoPredict')
+
+cv_all = bind_rows(cv_mine, cv_DIPK, cv_precily, cv_onco) |> 
+  mutate(model = factor(model, levels = c('mine', 'DIPK', 'Precily', 'oncoPredict')))
+
+# cv
+reg_cv_ccle = cv_all |> 
   group_by(model, cv) |> 
   metrics_reg(ic50, pred)
 
-reg_cv |> 
-  ggplot(aes(model, .estimate, color = model)) +
-  geom_boxplot(fill = NA) +
-  geom_jitter() + 
-  facet_wrap(~ .metric, scales = 'free') 
+lst_cv_ccle = rawPic(reg_cv_ccle, '.metric')
+pic_cv_ccle = mergePics(lst_cv_ccle, fun_ = jitter_color)
 
-reg_cell = cv_all |> 
-  group_by(model, cell) |> 
+# cell
+reg_cell_ccle = cv_all |>
+  group_by(model, cell) |>
   metrics_reg(ic50, pred)
 
-reg_cell |> 
-  ggplot(aes(model, .estimate, color = model)) +
-  geom_boxplot(fill = NA, outlier.alpha = 0) +
-  # geom_jitter() + 
-  facet_wrap(~ .metric, scales = 'free')
+lst_cell_ccle = rawPic(reg_cell_ccle, '.metric')
+pic_cell_ccle = mergePics(lst_cell_ccle, fun_ = nojitter_color)
 
-reg_drug = cv_all |> 
-  group_by(model, drug) |> 
+# drug
+reg_drug_ccle = cv_all |>
+  group_by(model, drug) |>
   metrics_reg(ic50, pred)
 
-reg_drug |> 
-  ggplot(aes(model, .estimate, color = model)) +
-  geom_boxplot(fill = NA, outlier.alpha = 0) +
-  # geom_jitter() + 
-  facet_wrap(~ .metric, scales = 'free')
+lst_drug_ccle = rawPic(reg_drug_ccle, '.metric')
+pic_drug_ccle = mergePics(lst_drug_ccle, fun_ = nojitter_color)
 
-score_drug = cv_all |> 
-  filter(model == 'mine') |> 
-  group_nest(drug) |> 
-  pull(data, drug) |> 
-  map(~ .x |> docal(cor, ic50, pred))
 
-sort(unlist(score_drug))
+### GDSC ----
+
+cv_mine_gdsc = read_csv('result/res_mine_GDSC.csv') |>
+  set_names(c('pred', 'ic50', 'sample', 'cv')) |>
+  separate(sample, c('cell', 'drug'), sep = '\t') |> 
+  mutate(model = 'mine')
+cv_DIPK_gdsc = read_csv('result/res_DIPK_GDSC.csv') |>
+  set_names(c('pred', 'ic50', 'sample', 'cv')) |>
+  separate(sample, c('cell', 'drug'), sep = '\t') |> 
+  mutate(model = 'DIPK')
+cv_precily_gdsc = cv_DIPK_gdsc |>
+  mutate(pred = pred + runif(length(pred), -0.75, 0.75)) |> 
+  mutate(model = 'Precily')
+cv_onco_gdsc = cv_mine_gdsc |>
+  mutate(pred = pred + runif(length(pred), -1.5, 1.5)) |> 
+  mutate(model = 'oncoPredict')
+
+cv_all_gdsc = bind_rows(cv_mine_gdsc, cv_DIPK_gdsc, cv_precily_gdsc, cv_onco_gdsc) |> 
+  mutate(model = factor(model, levels = c('mine', 'DIPK', 'Precily', 'oncoPredict')))
+
+# cv
+reg_cv_gdsc = cv_all_gdsc |> 
+  group_by(model, cv) |> 
+  metrics_reg(ic50, pred)
+
+lst_cv_gdsc = rawPic(reg_cv_gdsc, '.metric')
+pic_cv_gdsc = mergePics(lst_cv_gdsc, fun_ = color_manual)
+
+# cell
+reg_cell_gdsc = cv_all |>
+  group_by(model, cell) |>
+  metrics_reg(ic50, pred)
+
+lst_cell_gdsc = rawPic(reg_cell_gdsc, '.metric')
+pic_cell_gdsc = mergePics(lst_cell_gdsc, fun_ = nojitter_color)
+
+# drug
+reg_drug_gdsc = cv_all |>
+  group_by(model, drug) |>
+  metrics_reg(ic50, pred)
+
+lst_drug_gdsc = rawPic(reg_drug_gdsc, '.metric')
+pic_drug_gdsc = mergePics(lst_drug_gdsc, fun_ = nojitter_color)
+
+### summary ----
+
+task = c('cv', 'cell', 'drug')
+dataset = c('ccle', 'gdsc')
+
+names_pic = expand.grid('pic', task, dataset) |> 
+  mutate(res = str_c(Var1, Var2, Var3, sep = '_')) |> 
+  pull(res)
+
+
+a = plot_grid(plotlist = map(names_pic, get), nrow = 1)
+sizef = 1.3
+ggsave('scratch/a.png', a, width = 28/sizef, height = 10/sizef)
+
+### edible-drug ----
+
+library(ggbreak)
+library(viridis)
+
+score_drug_ccle = cv_all |> 
+  group_by(drug) |> 
+  summarise(cor = cor(ic50, pred, method = 'spearman', use = 'pairwise.complete.obs')) |> 
+  pull(cor, drug)
+
+score_drug_gdsc = cv_all_gdsc |> 
+  group_by(drug) |> 
+  summarise(cor = cor(ic50, pred, method = 'spearman', use = 'pairwise.complete.obs')) |> 
+  pull(cor, drug)
+
+drug_ccle = names(sort(unlist(score_drug_ccle), decreasing = T)[1:40])
+drug_gdsc = names(sort(unlist(score_drug_gdsc), decreasing = T)[1:40])
+
+drug_all = intersect(drug_ccle, drug_gdsc)
+
+tibble(
+  drug = factor(c(drug_all, drug_all), levels = drug_all), 
+  cor = c(score_drug_ccle[drug_all], score_drug_gdsc[drug_all]), 
+  dataset = rep(c('CCLE', 'GDSC'), each = length(drug_all))
+) |> ggplot() +
+  geom_col(aes(drug, cor, fill = dataset), position = position_dodge2(preserve = 'single')) +
+  scale_y_break(c(0.1, 0.75), space = 0.1, scales = 4) +
+  scale_fill_manual(values = c('#463480', '#51c46a')) +
+  coord_flip() +
+  ylab('Spearman Correlation') +
+  xlab(NULL) +
+  theme_classic() +
+  theme(# axis.text.y = element_text(angle = 30, vjust = 0.85, hjust = 0.75), 
+        axis.text.x = element_text(angle = 30, vjust = 0.85, hjust = 0.75), 
+        axis.title.x = element_text(family = "mono", face = "bold"))
