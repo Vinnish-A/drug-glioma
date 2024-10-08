@@ -65,6 +65,8 @@ def GetData(dataset):
                      ic50=torch.tensor([IC50[ii]], dtype=torch.float32))
         Graph.append(graph)
 
+    print('Prepared! ')
+
     return Graph
 
 

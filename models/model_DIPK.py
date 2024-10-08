@@ -19,4 +19,4 @@ params = [
     {'params': model_DIPK.parameters(), 'weight_decay': 0.0001}
 ]
 optimizer_DIPK = optim.Adam(params, lr=lr)
-
+torch.save(net_DIPK.state_dict(), 'checkpoint/origin_DIPK.pt')

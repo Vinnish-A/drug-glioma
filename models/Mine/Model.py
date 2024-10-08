@@ -18,7 +18,9 @@ class AttentionLayer(nn.Module):
         super(AttentionLayer, self).__init__()
         self.fc_layer = nn.Linear(features_dim_gene, 768)
         self.fc_layer2 = nn.Linear(118, 768)
-        self.attention = MultiHeadAttentionLayer(hid_dim=768, n_heads=1, dropout=0.3, device=DEVICE)
+        self.attention0 = MultiHeadAttentionLayer(hid_dim=768, n_heads=1, dropout=0.3, device=DEVICE)
+        self.attention1 = MultiHeadAttentionLayer(hid_dim=768, n_heads=1, dropout=0.3, device=DEVICE)
+        self.attention2 = MultiHeadAttentionLayer(hid_dim=768, n_heads=1, dropout=0.3, device=DEVICE)
 
     def forward(self, x, g, gene, bionic, cnv):
         gene = F.relu(self.fc_layer(gene))
@@ -31,12 +33,13 @@ class AttentionLayer(nn.Module):
         key = x[0]
         value = x[0]
         mask = torch.unsqueeze(torch.unsqueeze(x[1], 1), 1)
-        x_att = self.attention(query_0, key, value, mask)
-        x = torch.squeeze(x_att[0])
-        x_att = self.attention(query_1, key, value, mask)
-        x += torch.squeeze(x_att[0])
-        x_att = self.attention(query_2, key, value, mask)
-        x += torch.squeeze(x_att[0])
+        x_att0 = self.attention0(query_0, key, value, mask)
+        x_att1 = self.attention1(query_1, key, value, mask)
+        x_att2 = self.attention2(query_2, key, value, mask)
+        x0 = torch.squeeze(x_att0[0])
+        x1 = torch.squeeze(x_att1[0])
+        x2 = torch.squeeze(x_att2[0])
+        x = x0 + x1 + x2
         return x
 
 

@@ -16,6 +16,7 @@ data_response = read_tsv('DataPreprocess/TPM/drug_response.txt')
 ### without-cnv ----
 
 data_plot_response = read_csv('result/pred.csv')
+tmp = read_csv('result/TCGA_mine.csv')
 
 table_response = setNames(1:4, data_response$response |> unique())
 table_cancer = data_response |> 

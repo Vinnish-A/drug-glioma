@@ -6,8 +6,9 @@ import joblib
 os.chdir('.')
 sys.path.append(os.getcwd())
 sys.path.append('./utils')
-sys.path.append('./others')
-sys.path.append('./others/DIPK')
+sys.path.append('./models')
+sys.path.append('./models/Mine')
+sys.path.append('./models/DIPK')
 
 from torch.utils.data import DataLoader
 from torchmetrics import MeanSquaredError
@@ -15,9 +16,8 @@ from torchmetrics import MeanSquaredError
 from utils.Data import *
 from utils.Train import *
 
-from others.model_DIPK import net_DIPK, optimizer_DIPK
-from utils.Mine import net_mine, optimizer_mine
-from utils.Model import setup_seed
+from models.model_Mine import net_mine, optimizer_mine
+from models.model_DIPK import net_DIPK, optimizer_DIPK
 from utils.TrainConfig import *
 
 sample_all = pd.read_csv('Dataset/GDSC2.csv', sep='\t')

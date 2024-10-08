@@ -15,8 +15,8 @@ from torchmetrics import MeanSquaredError
 from utils.Data import *
 from utils.Train import *
 
-from others.model_DIPK import net_DIPK, optimizer_DIPK, CollateFn_DIPK
-from utils.Mine import net_mine, optimizer_mine, CollateFn
+from others.model_DIPK import net_DIPK, optimizer_DIPK
+from utils.Mine import net_mine, optimizer_mine
 from utils.Model import setup_seed
 from utils.TrainConfig import *
 

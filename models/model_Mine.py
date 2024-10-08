@@ -1,8 +1,8 @@
 import joblib
 import torch.optim as optim
-from Model import *
-from TrainConfig import *
-from BM import *
+from Mine.Model import *
+from Mine.TrainConfig import *
+from Mine.BM import *
 
 sampler = setup_seed(seed)
 test_pre_rec = dict()
@@ -21,3 +21,4 @@ params = [
 
 optimizer_mine = optim.Adam(params, lr=lr)
 net_mine = Net(encoder, biology, model)
+torch.save(net_mine.state_dict(), 'checkpoint/origin_mine.pt')

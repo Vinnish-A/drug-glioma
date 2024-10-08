@@ -9,6 +9,9 @@ from torch import nn
 from copy import deepcopy
 from sklearn.model_selection import KFold
 from TrainConfig import seed
+import random
+import numpy as np
+from optuna.samplers import TPESampler
 
 def printlog(info):
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -157,3 +160,11 @@ def split(n, n_splits=5, random_seed=seed):
         })
 
     return splits
+
+def setup_seed(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    sampler = TPESampler(seed=seed)
+    return sampler
