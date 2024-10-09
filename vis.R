@@ -111,11 +111,11 @@ line_plot = function(df_, title_) {
     ggplot() + 
     geom_errorbar(aes(response, ymin = mean-sd, ymax = mean+sd), width = 0.1, linewidth = 0.75, color = '#009995', alpha = 0.5) + 
     geom_line(aes(response, mean, group = 1), linewidth = 1, linewidth = 0.75, color = '#009995', alpha = 0.3) + 
-    geom_jitter(aes(response, pred, fill = response), data = df_, shape = 21, alpha = 0.75) +
+    geom_jitter(aes(response, pred, fill = response), color = 'white', data = df_, shape = 21, alpha = 0.75) +
     scale_fill_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8")) + 
     scale_x_discrete(labels = c('PD', 'SD', 'PR', 'CR')) +
     xlab(NULL) +
-    ylab('Predicted Drug Sensitivity') +
+    ylab('Predicted Response') +
     labs(title = title_, subtitle = p_) +
     theme_classic() + 
     theme(legend.position = 'none', 
@@ -128,8 +128,6 @@ line_plot = function(df_, title_) {
           axis.text.x = element_text(size = 10))
   
 }
-
-# line_plot()
 
 imap(split(data_plot_response, data_plot_response$model), line_plot)
 
