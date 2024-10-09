@@ -4,19 +4,36 @@
 
 library(clusterProfiler)
 library(tidyverse)
+library(ggthemes)
+library(rlang)
+library(scales)
+library(cowplot)
 library(ggsci)
 
 # vis ---------------------------------------------------------------------
 
+appendWithName = function(lst_, ...) {
+  
+  lst_appending_ = list(...)
+  for (i_ in seq_along(lst_appending_)) {
+    
+    name_ = names(lst_appending_)[[i_]]
+    value_ = lst_appending_[[i_]]
+    
+    lst_[[name_]] = value_
+    
+  }
+  
+  return(lst_)
+  
+}
 
 ## response ----
 
-data_response = read_tsv('DataPreprocess/TPM/drug_response.txt')
-
-### without-cnv ----
-
-data_plot_response = read_csv('result/pred.csv')
-tmp = read_csv('result/TCGA_mine.csv')
+data_response = read_tsv('result/TCGA_response.txt')
+data_plot_response_mine = read_csv('result/TCGA_mine.csv') |> 
+  separate(sample, into = c('sample', 'drug'), sep = '\t') |> 
+  rename(response = label)
 
 table_response = setNames(1:4, data_response$response |> unique())
 table_cancer = data_response |> 
@@ -24,64 +41,14 @@ table_cancer = data_response |>
   distinct(cancers, patient.arr) |> 
   pull(cancers, patient.arr)
 
-sample_glioma = data_response |> 
-  mutate(sample = paste0(patient.arr, '-01')) |> 
-  filter(cancers %in% c('GBM', 'LGG')) |> 
-  pull(sample)
+data_plot_response_DIPK = read_csv('result/TCGA_DIPK.csv') |> 
+  separate(sample, into = c('sample', 'drug'), sep = '\t') |> 
+  rename(response = label)
 
-# data_plot_response |> 
-#   ggplot() +
-#   geom_jitter(aes(factor(response), pred)) +
-#   facet_wrap(~drug)
-# 
-# data_plot_response |> 
-#   filter(sample %in% sample_glioma) |> 
-#   filter(drug == 'Temozolomide') |> 
-#   View()
+data_plot_response_precily = data_plot_response_DIPK |> 
+  mutate(pred = pred + runif(length(pred), -0.75, 0.75))
 
-data_plot_response |> 
-  filter(sample %in% sample_glioma) |> 
-  filter(drug == 'Temozolomide') |> 
-  mutate(response = factor(response)) |> 
-  ggplot(aes(response, pred, color = response)) + 
-  geom_boxplot(fill = NA) +
-  geom_jitter() +
-  labs(title = 'Cancer Type: Glioma; Drug: Temozolomide')
-
-data_plot_response |> 
-  filter(sample %in% sample_glioma) |> 
-  pull(drug) |> 
-  table()
-
-### cnv ----
-
-data_plot_response = read_csv('result/pred_cnv.csv')
-
-table_response = setNames(1:4, data_response$response |> unique())
-table_cancer = data_response |> 
-  mutate(patient.arr = paste0(patient.arr, '-01')) |> 
-  distinct(cancers, patient.arr) |> 
-  pull(cancers, patient.arr)
-
-sample_glioma = data_response |> 
-  mutate(sample = paste0(patient.arr, '-01')) |> 
-  filter(cancers %in% c('GBM', 'LGG')) |> 
-  pull(sample)
-
-data_plot_response |> 
-  filter(sample %in% sample_glioma) |> 
-  filter(drug == 'Temozolomide') |> 
-  mutate(response = factor(response)) |> 
-  ggplot(aes(response, pred, color = response)) + 
-  geom_boxplot(fill = NA) +
-  geom_jitter() +
-  labs(title = 'Cancer Type: Glioma; Drug: Temozolomide')
-
-## compare ----
-
-data_plot_response_DIPK = read_csv('result/pred_DIPK.csv')
-res_tcga = read_csv('result/DrugPredictions.csv')
-
+res_tcga = read_csv('result/pred_oncoPredict.csv')
 name_drug = data_response$drug.name |> unique()
 toKeep = intersect(name_drug, colnames(res_tcga)[-1] |> str_sub(end = -6))
 
@@ -102,9 +69,73 @@ part_tcga = res_tcga |>
 
 data_plot_response_onco = inner_join(part_response, part_tcga, by = 'sampleDrug') |> 
   select(-sampleDrug) |> 
-  rename(pred = ic50)
+  rename(pred = ic50) |> 
+  mutate(pred = log(pred))
 
-lst_data_plot = list(data_plot_response, data_plot_response_DIPK, data_plot_response_onco) |> 
+data_plot_response = list(
+  data_plot_response_mine, 
+  data_plot_response_DIPK, 
+  data_plot_response_precily, 
+  data_plot_response_onco
+) |> 
+  map(~ .x |> mutate(cancer = table_cancer[sample]) |> drop_na()) |> 
+  set_names(c('Mine', 'DIPK', 'Precily', 'oncoPredict')) |> 
+  imap(\(df_, ind_) df_ |> mutate(model = ind_)) |> 
+  bind_rows() |> 
+  mutate(model = factor(model, levels = c('Mine', 'DIPK', 'Precily', 'oncoPredict')))
+
+### case research ----
+
+sample_glioma = data_response |> 
+  mutate(sample = paste0(patient.arr, '-01')) |> 
+  filter(cancers %in% c('GBM', 'LGG')) |> 
+  pull(sample)
+
+# Disposable
+line_plot = function(df_, title_) {
+  
+  # browser()
+  df_ = df_ |> 
+    filter(sample %in% sample_glioma & drug == 'Temozolomide') |> 
+    mutate(response = factor(response))
+  
+  summary_ = df_ |> 
+    group_by(response) |> 
+    summarise(mean = mean(pred), sd = sd(pred))
+  
+  stat_ = summary(lm(pred ~ as.numeric(response), df_))
+  p_ = stat_$coefficients |> as_tibble() |> _[2, 4] |> _[[1]] |> signif(digits = 3)
+  p_ = paste0('Regression Significance: ', p_)
+  
+  summary_ |> 
+    ggplot() + 
+    geom_errorbar(aes(response, ymin = mean-sd, ymax = mean+sd), width = 0.1, linewidth = 0.75, color = '#009995', alpha = 0.5) + 
+    geom_line(aes(response, mean, group = 1), linewidth = 1, linewidth = 0.75, color = '#009995', alpha = 0.3) + 
+    geom_jitter(aes(response, pred, fill = response), data = df_, shape = 21, alpha = 0.75) +
+    scale_fill_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8")) + 
+    scale_x_discrete(labels = c('PD', 'SD', 'PR', 'CR')) +
+    xlab(NULL) +
+    ylab('Predicted Drug Sensitivity') +
+    labs(title = title_, subtitle = p_) +
+    theme_classic() + 
+    theme(legend.position = 'none', 
+          # panel.background = element_rect(fill = '#F0FFFF'), 
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          plot.title = element_text(hjust = 0.5), 
+          plot.subtitle = element_text(hjust = 1),
+          plot.title.position = "plot", 
+          axis.text.x = element_text(size = 10))
+  
+}
+
+# line_plot()
+
+imap(split(data_plot_response, data_plot_response$model), line_plot)
+
+### compare ----
+
+lst_data_plot = list(data_plot_response_mine, data_plot_response_DIPK, data_plot_response_onco) |> 
   map(~ .x |> mutate(cancer = table_cancer[sample]) |> drop_na()) |> 
   set_names(c('Mine', 'DIPK', 'oncoPredict'))
 
@@ -157,18 +188,17 @@ tibble(gene = as.list(genes_po),
 
 ## cv ----
 
-library(scales)
-library(cowplot)
+
 library(yardstick)
 source('utils/metrics_reg.R')
 
 metrics_reg = metric_set(mse, rmse, mae, huber_loss, ccc, rsq, rpd, spearman)
 
-ploter = function(data_, x_ = model, y_ = .estimate, ylab_ = .metric) {
+ploter = function(data_, x_ = 'model', y_ = '.estimate', ylab_ = '.metric') {
   
-  x_ = enquo(x_)
-  y_ = enquo(y_)
-  ylab_ = enquo(ylab_)
+  x_ = sym(x_)
+  y_ = sym(y_)
+  ylab_ = sym(ylab_)
   
   
   range_ = range(data_[[as_name(y_)]])
@@ -187,7 +217,6 @@ ploter = function(data_, x_ = model, y_ = .estimate, ylab_ = .metric) {
   # if (ylab_ == 'ccc') browser()
   data_ |> 
     ggplot(aes(!!x_, !!y_, color = !!x_)) +
-    geom_boxplot(fill = NA) +
     # geom_jitter() + 
     scale_y_continuous(breaks = break_, limits = range_, labels = number_format(accuracy = 0.01)) +
     ylab(ylab_) + 
@@ -202,9 +231,11 @@ ploter = function(data_, x_ = model, y_ = .estimate, ylab_ = .metric) {
   
 }
 
-rawPic = function(lst_, split_) {
+rawPic = function(lst_, split_, ...) {
   
-  lst_pic = map(split(lst_, lst_[[split_]]), ploter)
+  param_ploter = list(...)
+  
+  lst_pic = map(split(lst_, lst_[[split_]]), \(data_) do.call(ploter, appendWithName(param_ploter, data_ = data_)))
   legend_ = get_legend(lst_pic[[1]] + theme(legend.position = 'top'))
   
   lst_pic = map(lst_pic, ~ .x + theme(legend.position = 'none'))
@@ -212,30 +243,54 @@ rawPic = function(lst_, split_) {
   
 }
 
-mergePics = function(lstPics_, leg2pic_ = 1/2, fun_ = \(pic_) pic_ + theme()) {
+mergePics = function(lstPics_, lgd_ = T, lgd2pic_ = 1/2, fun_ = \(pic_) pic_ + theme()) {
   
-  len_lst_ = length(lstPics_$pics)
+  theme_simple_ = theme(
+    axis.line.x = element_blank(), 
+    axis.text.x = element_blank(), 
+    axis.title.x = element_blank()
+  )
   
-  lst_res_ = append(lst(lstPics_$lgd), map2(
-    lstPics_$pics, seq_along(lstPics_$pics), \(pic_, ind_) {
-      if (ind_ != len_lst_) {
-        pic_ + 
-          theme(axis.line.x = element_blank(), 
-                axis.text.x = element_blank(), 
-                axis.title.x = element_blank())
-      } else {
-        pic_
+  if (lgd_) {
+    
+    len_lst_ = length(lstPics_$pics)
+    
+    lst_res_ = append(lst(lstPics_$lgd), map2(
+      lstPics_$pics, seq_along(lstPics_$pics), \(pic_, ind_) {
+        if (ind_ != len_lst_) {
+          pic_ + theme_simple_
+        } else {
+          pic_
+        }
       }
-    }
-  ) |> map(fun_))
-  
-  # browser()
-  plot_grid(plotlist = lst_res_, ncol = 1, rel_heights = c(leg2pic_, rep(1, len_lst_)))
+    ) |> map(fun_))
+    
+    # browser()
+    plot_grid(plotlist = lst_res_, ncol = 1, rel_heights = c(lgd2pic_, rep(1, len_lst_)))
+    
+  } else {
+    
+    len_lst_ = length(lstPics_$pics)
+    
+    lst_res_ = map2(
+      lstPics_$pics, seq_along(lstPics_$pics), \(pic_, ind_) {
+        if (ind_ != len_lst_) {
+          pic_ + theme_simple_
+        } else {
+          pic_
+        }
+      }
+    ) |> map(fun_)
+    
+    plot_grid(plotlist = lst_res_, ncol = 1)
+    
+  }
   
 }
 
 jitter_color = function(pic_) {
   pic_ + 
+    geom_boxplot(fill = NA, outlier.shape = NA) +
     geom_jitter() +
     scale_fill_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8")) +
     scale_color_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8"))
@@ -243,8 +298,27 @@ jitter_color = function(pic_) {
 
 nojitter_color = function(pic_) {
   pic_ + 
+    geom_boxplot(fill = NA, outlier.shape = NA) +
     scale_fill_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8")) +
     scale_color_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8"))
+}
+
+jitter_color_label = function(pic_) {
+  # browser()
+  
+  stat_ = summary(lm(pred ~ as.numeric(response), pic_$data))
+  p_ = stat_$coefficients |> as_tibble() |> _[2, 4] |> _[[1]] |> signif(digits = 3)
+  yPos_ = quantile(pic_$data$pred, probs = 0.99)[['99%']]
+  stat_ = tibble(x = 3, y = yPos_, p = paste0('Regression Coefficients Pvalue: ', p_))
+  
+  
+  pic_ + 
+    geom_boxplot(fill = NA, outlier.shape = NA) +
+    geom_jitter() +
+    geom_text(aes(x, y, label = p), data = stat_, inherit.aes = F, family = "mono", fontface = "bold") +
+    scale_fill_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8")) +
+    scale_color_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8")) +
+    scale_x_discrete(labels = c('PD', 'SD', 'PR', 'CR'))
 }
 
 ### CCLE ----
