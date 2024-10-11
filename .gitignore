@@ -6,5 +6,5 @@
 Dataset/
 DataPreprocess/
 checkpoint/
-result/
+result/*pkl
 scratch/

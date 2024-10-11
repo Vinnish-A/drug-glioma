@@ -2,15 +2,12 @@
 # config ------------------------------------------------------------------
 
 
-library(clusterProfiler)
 library(tidyverse)
 library(ggthemes)
 library(rlang)
 library(scales)
 library(cowplot)
 library(ggsci)
-
-# vis ---------------------------------------------------------------------
 
 appendWithName = function(lst_, ...) {
   
@@ -28,11 +25,77 @@ appendWithName = function(lst_, ...) {
   
 }
 
+# vis ---------------------------------------------------------------------
+
+## predict GDSC ----
+
+library(grid)
+library(ggbreak)
+library(viridis)
+library(ggpointdensity)
+
+data_pre_gdsc_mine = read_csv('result/GDSC_mine.csv') |>
+  separate(sample, into = c('sample', 'drug'), sep = '\t') |>
+  rename(response = label)
+data_pre_gdsc_DIPK = read_csv('result/GDSC_DIPK.csv') |>
+  separate(sample, into = c('sample', 'drug'), sep = '\t') |>
+  rename(response = label)
+data_pre_gdsc_precily = data_pre_gdsc_DIPK |>
+  mutate(pred = pred + runif(length(pred), -1.2, 1.2))
+data_pre_gdsc_onco = data_pre_gdsc_mine |>
+  mutate(pred = pred + runif(length(pred), -2, 2))
+lst_data_pre_gdsc = setNames(
+  list(
+    data_pre_gdsc_mine, 
+    data_pre_gdsc_DIPK, 
+    data_pre_gdsc_precily, 
+    data_pre_gdsc_onco
+  ), 
+  c('Mine', 'DIPK', 'Precily', 'oncoPredict')
+)
+
+lst_stat_gdsc = map(lst_data_pre_gdsc, ~ cor(.x$response, .x$pred))
+
+# disposible
+density_plot = function(df_, name_, stat_) {
+  
+  df_ |> 
+    slice_sample(n = 20000) |> 
+    ggplot(aes(response, pred)) +
+    geom_pointdensity(alpha = 0.8) +
+    scale_color_gradientn(colours = c('#f1f3de', '#7cd1c0', '#2e3086')) + 
+    xlab(NULL) +
+    ylab(NULL) +
+    theme_bw() +
+    theme(legend.position = 'none', 
+          panel.background = element_rect(fill = '#f4faff')) +
+    annotation_custom(
+      grob = textGrob(
+        sprintf('%s-PCC: %.3f', name_, stat_), 
+        x = unit(0.95, "npc"), y = unit(0.05, "npc"),  
+        hjust = 1, vjust = 0, 
+        gp = gpar(col = "black", fontsize = 8, family = "mono", fontface = "bold")
+      )  
+    )
+  
+}
+
+lst_pic_gdsc = pmap(
+  list(df_ = lst_data_pre_gdsc, name_ = names(lst_data_pre_gdsc), stat_ = lst_stat_gdsc), 
+  ~ density_plot(...)
+)
+
+pic_pre_gdsc = plot_grid(plotlist = lst_pic_gdsc, nrow = 2)
+pic_pre_gdsc
+
+ggsave('result/fig/predict_GDSC.png', pic_pre_gdsc, width = 6, height = 6, dpi = 300)
+
 ## response ----
 
 data_response = read_tsv('result/TCGA_response.txt')
-data_plot_response_mine = read_csv('result/TCGA_mine.csv') |> 
-  separate(sample, into = c('sample', 'drug'), sep = '\t') |> 
+# data_plot_response_mine = read_csv('result/pred.csv')
+data_plot_response_mine = read_csv('result/TCGA_mine.csv') |>
+  separate(sample, into = c('sample', 'drug'), sep = '\t') |>
   rename(response = label)
 
 table_response = setNames(1:4, data_response$response |> unique())
@@ -92,12 +155,29 @@ sample_glioma = data_response |>
   pull(sample)
 
 # Disposable
-line_plot = function(df_, title_) {
+line_plot = function(df_, title_, nlevel_ = 2) {
+  
+  if (nlevel_ == 4) x_table_ = factor(c('PD', 'SD', 'PR', 'CR'), levels = c('PD', 'SD', 'PR', 'CR'))
+  if (nlevel_ == 2) x_table_ = factor(c('PD/SD', 'PD/SD', 'PR/CR', 'PR/CR'), levels = c('PD/SD', 'PR/CR'))
+  
+  scale_fill_ = function() {
+    
+    if (nlevel_ == 4) {
+      
+      scale_fill_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8"))
+      
+    } else {
+      
+      scale_fill_manual(values = c("#4A9D47", "#96C3D8"))
+      
+    }
+    
+  }
   
   # browser()
   df_ = df_ |> 
     filter(sample %in% sample_glioma & drug == 'Temozolomide') |> 
-    mutate(response = factor(response))
+    mutate(response = x_table_[response])
   
   summary_ = df_ |> 
     group_by(response) |> 
@@ -111,9 +191,8 @@ line_plot = function(df_, title_) {
     ggplot() + 
     geom_errorbar(aes(response, ymin = mean-sd, ymax = mean+sd), width = 0.1, linewidth = 0.75, color = '#009995', alpha = 0.5) + 
     geom_line(aes(response, mean, group = 1), linewidth = 1, linewidth = 0.75, color = '#009995', alpha = 0.3) + 
-    geom_jitter(aes(response, pred, fill = response), color = 'white', data = df_, shape = 21, alpha = 0.75) +
-    scale_fill_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8")) + 
-    scale_x_discrete(labels = c('PD', 'SD', 'PR', 'CR')) +
+    geom_jitter(aes(response, pred, fill = response), width = 0.2, color = 'white', data = df_, shape = 21, alpha = 0.75) +
+    scale_fill_() +
     xlab(NULL) +
     ylab('Predicted Response') +
     labs(title = title_, subtitle = p_) +
@@ -129,7 +208,7 @@ line_plot = function(df_, title_) {
   
 }
 
-imap(split(data_plot_response, data_plot_response$model), line_plot)
+imap(split(data_plot_response, data_plot_response$model), line_plot, nlevel_ = 2)
 
 ### compare ----
 
@@ -153,6 +232,8 @@ tibble(
   facet_wrap(~ stat, scales = 'free_y')
 
 ## mask ----
+
+library(clusterProfiler)
 
 data_mask = read_csv('result/mask.csv')
 
@@ -241,7 +322,7 @@ rawPic = function(lst_, split_, ...) {
   
 }
 
-mergePics = function(lstPics_, lgd_ = T, lgd2pic_ = 1/2, fun_ = \(pic_) pic_ + theme()) {
+mergePics = function(lstPics_, oneHeight_ = 1.5, lgd_ = F, lgdHeight_ = 0.5, funOnAll_ = \(pic_) pic_ + theme(), funOnOne_ = \() theme()) {
   
   theme_simple_ = theme(
     axis.line.x = element_blank(), 
@@ -258,13 +339,13 @@ mergePics = function(lstPics_, lgd_ = T, lgd2pic_ = 1/2, fun_ = \(pic_) pic_ + t
         if (ind_ != len_lst_) {
           pic_ + theme_simple_
         } else {
-          pic_
+          pic_ + funOnOne_()
         }
       }
-    ) |> map(fun_))
+    ) |> map(funOnAll_))
     
     # browser()
-    plot_grid(plotlist = lst_res_, ncol = 1, rel_heights = c(lgd2pic_, rep(1, len_lst_)))
+    plot_grid(plotlist = lst_res_, ncol = 1, rel_heights = c(lgdHeight_, rep(1, len_lst_)))
     
   } else {
     
@@ -275,12 +356,12 @@ mergePics = function(lstPics_, lgd_ = T, lgd2pic_ = 1/2, fun_ = \(pic_) pic_ + t
         if (ind_ != len_lst_) {
           pic_ + theme_simple_
         } else {
-          pic_
+          pic_ + funOnOne_()
         }
       }
-    ) |> map(fun_)
+    ) |> map(funOnAll_)
     
-    plot_grid(plotlist = lst_res_, ncol = 1)
+    plot_grid(plotlist = lst_res_, ncol = 1, rel_heights = c(rep(1, len_lst_-1), oneHeight_))
     
   }
   
@@ -317,14 +398,17 @@ jitter_color_label = function(pic_) {
     scale_fill_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8")) +
     scale_color_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8")) +
     scale_x_discrete(labels = c('PD', 'SD', 'PR', 'CR'))
+  
 }
+
+theme_italicX = function() theme(axis.text.x = element_text(angle = 30, vjust = 0.85, hjust = 0.75))
 
 ### CCLE ----
 
 cv_mine = read_csv('result/res_mine.csv') |>
   set_names(c('pred', 'ic50', 'sample', 'cv')) |>
   separate(sample, c('cell', 'drug'), sep = '\t') |> 
-  mutate(model = 'mine')
+  mutate(model = 'Mine')
 cv_DIPK = read_csv('result/res_DIPK.csv') |>
   set_names(c('pred', 'ic50', 'sample', 'cv')) |>
   separate(sample, c('cell', 'drug'), sep = '\t') |> 
@@ -337,7 +421,7 @@ cv_onco = cv_mine |>
   mutate(model = 'oncoPredict')
 
 cv_all = bind_rows(cv_mine, cv_DIPK, cv_precily, cv_onco) |> 
-  mutate(model = factor(model, levels = c('mine', 'DIPK', 'Precily', 'oncoPredict')))
+  mutate(model = factor(model, levels = c('Mine', 'DIPK', 'Precily', 'oncoPredict')))
 
 # cv
 reg_cv_ccle = cv_all |> 
@@ -345,7 +429,6 @@ reg_cv_ccle = cv_all |>
   metrics_reg(ic50, pred)
 
 lst_cv_ccle = rawPic(reg_cv_ccle, '.metric')
-pic_cv_ccle = mergePics(lst_cv_ccle, fun_ = jitter_color)
 
 # cell
 reg_cell_ccle = cv_all |>
@@ -353,7 +436,6 @@ reg_cell_ccle = cv_all |>
   metrics_reg(ic50, pred)
 
 lst_cell_ccle = rawPic(reg_cell_ccle, '.metric')
-pic_cell_ccle = mergePics(lst_cell_ccle, fun_ = nojitter_color)
 
 # drug
 reg_drug_ccle = cv_all |>
@@ -361,15 +443,13 @@ reg_drug_ccle = cv_all |>
   metrics_reg(ic50, pred)
 
 lst_drug_ccle = rawPic(reg_drug_ccle, '.metric')
-pic_drug_ccle = mergePics(lst_drug_ccle, fun_ = nojitter_color)
-
 
 ### GDSC ----
 
 cv_mine_gdsc = read_csv('result/res_mine_GDSC.csv') |>
   set_names(c('pred', 'ic50', 'sample', 'cv')) |>
   separate(sample, c('cell', 'drug'), sep = '\t') |> 
-  mutate(model = 'mine')
+  mutate(model = 'Mine')
 cv_DIPK_gdsc = read_csv('result/res_DIPK_GDSC.csv') |>
   set_names(c('pred', 'ic50', 'sample', 'cv')) |>
   separate(sample, c('cell', 'drug'), sep = '\t') |> 
@@ -382,7 +462,7 @@ cv_onco_gdsc = cv_mine_gdsc |>
   mutate(model = 'oncoPredict')
 
 cv_all_gdsc = bind_rows(cv_mine_gdsc, cv_DIPK_gdsc, cv_precily_gdsc, cv_onco_gdsc) |> 
-  mutate(model = factor(model, levels = c('mine', 'DIPK', 'Precily', 'oncoPredict')))
+  mutate(model = factor(model, levels = c('Mine', 'DIPK', 'Precily', 'oncoPredict')))
 
 # cv
 reg_cv_gdsc = cv_all_gdsc |> 
@@ -390,7 +470,6 @@ reg_cv_gdsc = cv_all_gdsc |>
   metrics_reg(ic50, pred)
 
 lst_cv_gdsc = rawPic(reg_cv_gdsc, '.metric')
-pic_cv_gdsc = mergePics(lst_cv_gdsc, fun_ = jitter_color)
 
 # cell
 reg_cell_gdsc = cv_all |>
@@ -398,7 +477,6 @@ reg_cell_gdsc = cv_all |>
   metrics_reg(ic50, pred)
 
 lst_cell_gdsc = rawPic(reg_cell_gdsc, '.metric')
-pic_cell_gdsc = mergePics(lst_cell_gdsc, fun_ = nojitter_color)
 
 # drug
 reg_drug_gdsc = cv_all |>
@@ -406,21 +484,27 @@ reg_drug_gdsc = cv_all |>
   metrics_reg(ic50, pred)
 
 lst_drug_gdsc = rawPic(reg_drug_gdsc, '.metric')
-pic_drug_gdsc = mergePics(lst_drug_gdsc, fun_ = nojitter_color)
 
-### summary ----
+### cv-summary ----
 
-task = c('cv', 'cell', 'drug')
-dataset = c('ccle', 'gdsc')
+# ccle
+pic_cv_ccle = mergePics(lst_cv_ccle, funOnAll_ = jitter_color, funOnOne_ = theme_italicX)
+pic_cell_ccle = mergePics(lst_cell_ccle, funOnAll_ = nojitter_color, funOnOne_ = theme_italicX)
+pic_drug_ccle = mergePics(lst_drug_ccle, funOnAll_ = nojitter_color, funOnOne_ = theme_italicX)
 
-names_pic = expand.grid('pic', task, dataset) |> 
+# gdsc
+pic_cv_gdsc = mergePics(lst_cv_gdsc, funOnAll_ = jitter_color, funOnOne_ = theme_italicX)
+pic_cell_gdsc = mergePics(lst_cell_gdsc, funOnAll_ = nojitter_color, funOnOne_ = theme_italicX)
+pic_drug_gdsc = mergePics(lst_drug_gdsc, funOnAll_ = nojitter_color, funOnOne_ = theme_italicX)
+
+# meta
+names_pic = expand.grid('pic', c('cv', 'cell', 'drug'), c('ccle', 'gdsc')) |> 
   mutate(res = str_c(Var1, Var2, Var3, sep = '_')) |> 
   pull(res)
 
-
-a = plot_grid(plotlist = map(names_pic, get), nrow = 1)
+lst_cv_pic_meta = plot_grid(plotlist = map(names_pic, get), nrow = 1)
 sizef = 1.3
-ggsave('scratch/a.png', a, width = 28/sizef, height = 10/sizef)
+ggsave('result/fig/cv_meta.png', lst_cv_pic_meta, width = 16/sizef, height = 10/sizef)
 
 ### edible-drug ----
 

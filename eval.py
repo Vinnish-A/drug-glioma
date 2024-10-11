@@ -24,23 +24,31 @@ from utils.TrainConfig import *
 part1 = pd.read_csv('Dataset/Train.csv', sep='\t')
 part2 = pd.read_csv('Dataset/Test.csv', sep='\t')
 tcga = pd.read_csv('Dataset/TCGA.csv', sep='\t')
+gdsc = pd.read_csv('Dataset/GDSC2.csv', sep='\t')
 sample_all = pd.concat([part1, part2], axis=0)
 
 loss_func = nn.MSELoss()
 metrics_dict = {'MSE': PearsonCorrCoef().to(DEVICE)}
 
 # mine
-dl_test_mine = DataLoader(MyDataSet(GetData(tcga)), batch_size=batch_size, shuffle=True, collate_fn=CollateFn(True))
+dl_mine_tcga = DataLoader(MyDataSet(GetData(tcga)), batch_size=batch_size, shuffle=True, collate_fn=CollateFn(True))
+dl_mine_gdsc = DataLoader(MyDataSet(GetData(gdsc)), batch_size=batch_size, shuffle=True, collate_fn=CollateFn(True))
 
 net_mine.load_state_dict(torch.load('checkpoint/mine_trained.pt'))
-res_tcga_mine = predict_model(net_mine, dl_test_mine)
+res_mine_tcga = predict_model(net_mine, dl_mine_tcga)
+res_mine_gdsc = predict_model(net_mine, dl_mine_gdsc)
 
-pd.DataFrame(dict(zip(['pred', 'label', 'sample'], res_tcga_mine))).to_csv('result/TCGA_mine.csv', index=None)
+pd.DataFrame(dict(zip(['pred', 'label', 'sample'], res_mine_tcga))).to_csv('result/TCGA_mine.csv', index=None)
+pd.DataFrame(dict(zip(['pred', 'label', 'sample'], res_mine_gdsc))).to_csv('result/GDSC_mine.csv', index=None)
 
 # DIPK
-dl_test_DIPK = DataLoader(MyDataSet(GetData_DIPK(tcga)), batch_size=batch_size, shuffle=True, collate_fn=CollateFn_DIPK(True))
+dl_DIPK_tcga = DataLoader(MyDataSet(GetData_DIPK(tcga)), batch_size=batch_size, shuffle=True, collate_fn=CollateFn_DIPK(True))
+dl_DIPK_gdsc = DataLoader(MyDataSet(GetData_DIPK(gdsc)), batch_size=batch_size, shuffle=True, collate_fn=CollateFn_DIPK(True))
+
 
 net_DIPK.load_state_dict(torch.load('checkpoint/DIPK_cv4.pt'))
-res_tcga_DIPK = predict_model(net_DIPK, dl_test_DIPK)
+res_DIPK_tcga = predict_model(net_DIPK, dl_DIPK_tcga)
+res_DIPK_gdsc = predict_model(net_DIPK, dl_DIPK_gdsc)
 
-pd.DataFrame(dict(zip(['pred', 'label', 'sample'], res_tcga_DIPK))).to_csv('result/TCGA_DIPK.csv', index=None)
+pd.DataFrame(dict(zip(['pred', 'label', 'sample'], res_DIPK_tcga))).to_csv('result/TCGA_DIPK.csv', index=None)
+pd.DataFrame(dict(zip(['pred', 'label', 'sample'], res_DIPK_gdsc))).to_csv('result/GDSC_DIPK.csv', index=None)

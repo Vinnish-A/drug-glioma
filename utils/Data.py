@@ -41,7 +41,7 @@ def Zscore(vector):
     return (vector - torch.mean(vector)) / (torch.std(vector))
 
 
-def GetData(dataset):
+def GetData(dataset, GRAPH_dict = GRAPH_dict, MolGNet_dict = MolGNet_dict, RNA_dict = RNA_dict, CNV_dict = CNV_dict):
     Cell_ = dataset.iloc[:, 0].tolist()
     Drug_ = dataset.iloc[:, 1].tolist()
     IC50_ = dataset.iloc[:, 2].tolist()
@@ -70,7 +70,7 @@ def GetData(dataset):
     return Graph
 
 
-def GetData_DIPK(dataset):
+def GetData_DIPK(dataset, GRAPH_dict = GRAPH_dict, MolGNet_dict = MolGNet_dict, RNA_dict = RNA_dict, BNF_dict = BNF_dict):
     Cell_ = dataset.iloc[:, 0].tolist()
     Drug_ = dataset.iloc[:, 1].tolist()
     IC50_ = dataset.iloc[:, 2].tolist()

@@ -1,0 +1,465 @@
+TY  - JOUR
+TI  - Co-expression of Cytoskeletal Protein Adducin 3 and CD133 in Neurospheres and a Temozolomide-resistant Subclone of Glioblastoma.
+AU  - Poon, Ming-Wai
+AU  - Zhuang, James Tin Fong
+AU  - Wong, Stanley Thian Sze
+AU  - Sun, Stella
+AU  - Zhang, Xiao-Qin
+AU  - Leung, Gilberto Ka Kit
+T2  - Anticancer Research
+AB  - BACKGROUND: Glioma stem cells are associated for temozolomide-resistance in glioblastoma. Adducin 3 (ADD3) is a cytoskeletal protein associated with chemoresistance but its role in glioblastoma has not been investigated. MATERIALS AND METHODS: Using an in vitro model of glioblastoma cells with acquired temozolomide resistance (D54-MG-R), the expressions of ADD3 and cancer stem cell markers were compared to those in temozolomide-sensitive glioblastoma cells (D54-MG-S). Immunofluorescence staining was used to investigate the expression patterns of ADD3 and cancer stem cell markers in temozolomide resistance and neurospheres of glioblastoma. RESULTS: Chemoresistant cells were found to have up-regulation of ADD3 and CD133 expression. A sub-population of D54-MG-R cells and glioma neurospheres exhibited coexpression of ADD3 with CD133. CONCLUSION: To our knowledge, this is the first report of a possible link between cytoskeletal protein expression, cancer stem cell phenotype and temozolomide resistance in human glioblastoma. This report lays the foundation for further investigation for ADD3 as a potential biomarker and therapeutic target in temozolomide-resistant glioma cells.
+DA  - 2015/12//undefined
+PY  - 2015
+VL  - 35
+IS  - 12
+SP  - 6487
+EP  - 6495
+J2  - Anticancer Res
+LA  - eng
+SN  - 1791-7530
+UR  - https://pubmed.ncbi.nlm.nih.gov/26637861
+AN  - 26637861
+DB  - PubMed
+KW  - glioblastoma
+KW  - adducin 3
+KW  - cancer stem cell marker
+KW  - CD133
+KW  - Co-expression
+KW  - cytoskeletal protein
+KW  - NANOG
+KW  - neurospheres
+KW  - temozolomide-resistant subclone
+ER  - 
+
+TY  - JOUR
+TI  - Molecular prognostic of nine parthanatos death-related genes in glioma, particularly in COL8A1 identification.
+AU  - Fan, Shuangshi
+AU  - Li, Hao
+AU  - Liu, Kun
+T2  - Journal of Neurochemistry
+AB  - Post-operative progression and chemotherapy resistance are the main causes of treatment failure in glioma patients. There is a lack of ideal prediction models for post-operative glioma patient progression and drug sensitivity. We aimed to develop a prognostic model of parthanatos mRNA biomarkers for glioma outcomes. A total of 11 parthanatos genes were obtained from ParthanatosCluster database. ConsensusClusterPlus and R "Limma" package were used to cluster The Cancer Genome Atlas (TCGA)-glioma cohort and analyze the differential mRNAs. Univariate Cox regression analysis, random survival forest model, and least absolute shrinkage and selection operator (LASSO) regression analysis were used to determine the nine ParthanatosScore prognostic genes combination. ParthanatosScore was verified by 656 patients and 979 patients in TCGA and CGCA-LGG/GBM datasets. Differences in genomic mutations, tumor microenvironments, and functional pathways were assessed. Drug response prediction was performed using pRRophetic. Kaplan-Meier survival analysis was analyzed. Finally, COL8A1 was selected to evaluate its potential biological function and drug sensitivity of temozolomide and AZD3759 in glioma cells. ParthanatosScore obtained a combination of nine glioma prognostic genes, including CD58, H19, TNFAIP6, FTLP3, TNFRSF11B, SFRP2, LOXL1, COL8A1, and FABP5P7. In the TCGA-LGG/GBM dataset, glioma prognosis was poor in high ParthanatosScore. Low-score glioma patients were sensitive to AZD3759_1915, AZD5582_1617, AZD8186_1918, Dasatinib_1079, and Temozolomide_1375, while high-score patients were less sensitive to these drugs. Compared with HA cells, COL8A1 was significantly over-expressed in LN229 and U251 cells. Silencing COL8A1 inhibited the malignant characterization of LN229 and U251 cells. Temozolomide and AZD3759 also promoted parthanatos gene expression in glioma cells. Temozolomide and AZD3759 inhibited COL8A1 expression and cell viability and promoted apoptosis in glioma cells and PGM cells. ParthanatosScore can accurately predict clinical prognosis and drug sensitivity after glioma surgery. Silencing COL8A1 inhibited the malignant characterization. Temozolomide and AZD3759 inhibited COL8A1 expression and cell viability and promoted apoptosis and parthanatos gene expression, which is a target to improve glioma.
+DA  - 2024/03//undefined
+PY  - 2024
+DO  - 10.1111/jnc.16049
+VL  - 168
+IS  - 3
+SP  - 205
+EP  - 223
+J2  - J Neurochem
+LA  - eng
+SN  - 1471-4159
+UR  - https://pubmed.ncbi.nlm.nih.gov/38225203
+AN  - 38225203
+DB  - PubMed
+KW  - prognosis
+KW  - COL8A1
+KW  - drug sensitivity
+KW  - glioma
+KW  - ParthanatosScore
+ER  - 
+
+TY  - JOUR
+TI  - DHFR/TYMS are positive regulators of glioma cell growth and modulate chemo-sensitivity to temozolomide.
+AU  - Zhao, Mengting
+AU  - Tan, Biqin
+AU  - Dai, Xiaoyang
+AU  - Shao, Yanfei
+AU  - He, Qiaojun
+AU  - Yang, Bo
+AU  - Wang, Jincheng
+AU  - Weng, Qinjie
+T2  - European Journal of Pharmacology
+AB  - Glioma is one of the most lethal malignancies and molecular regulators driving gliomagenesis are incompletely understood. Although temozolomide (TMZ) has been applied for malignant gliomas as a canonical chemotherapy, the treatment of glioma still remains limited due to frequently developed resistance to TMZ. Therefore, promising strategies that sensitize glioma cells to temozolomide are overwhelming to develop. Here we found that the expression of dihydrofolate reductase (DHFR) and thymidylate synthetase (TYMS), which played an essential role in folate metabolism and several types of tumors, were up-regulated in both human glioma tissues and cell lines, and overexpression of DHFR/TYMS promoted the proliferation of glioma cells. Notably, inhibition of DHFR/TYMS by pemetrexed exhibited synergistic anti-glioma activity with TMZ in both cell lines and U251 xenografts, which suggested potential combined chemotherapy for glioma. Mechanistically, the synergistic effect of inhibition of DHFR/TYMS with TMZ was due to activated AMPK and subsequently suppressed mTOR signaling pathway. Taken together, these findings identify an uncharacterized role of DHFR/TYMS in glioma growth and TMZ sensitivity mediated by AMPK-mTOR signal pathway, and provide a prospective approach for improving the anti-tumor activity of TMZ in glioma.
+DA  - 2019/11//undefined
+PY  - 2019
+DO  - 10.1016/j.ejphar.2019.172665
+VL  - 863
+SP  - 172665
+J2  - Eur J Pharmacol
+LA  - eng
+SN  - 1879-0712
+UR  - https://pubmed.ncbi.nlm.nih.gov/31542479
+AN  - 31542479
+DB  - PubMed
+KW  - Glioma
+KW  - AMPK-mTOR
+KW  - DHFR
+KW  - Pemetrexed
+KW  - Temozolomide
+KW  - TYMS
+ER  - 
+
+TY  - JOUR
+TI  - First Report of Management of Sequential Small Cell Transformation and ALK I1171T Mutation as Resistance Mechanisms in a Patient With ALK-EML4 Fused Non-Small Cell Lung Adenocarcinoma With a Novel Combination of Temozolomide and Lorlatinib: A Case Report.
+AU  - Majeed, Umair
+AU  - Li, Shenduo
+AU  - Seegobin, Karan
+AU  - Nassar, Aziza
+AU  - Manochakian, Rami
+AU  - Zhao, Yujie
+AU  - Lou, Yanyan
+T2  - JTO Clinical and Research Reports
+AB  - ALK-EML4 fusion-positive lung adenocarcinomas (LUADs) are effectively treated with ALK tyrosine kinase inhibitors, but most patients eventually develop resistance to these drugs owing to ALK-dependent or independent mechanisms. Endothelial to mesenchymal transformation with SCLC development is an ALK-independent mechanism of resistance that has not been previously reported with sequential ALK I1171T mutation while the patient is on treatment for the SCLC. Here, we report the first case of sequential SCLC transformation followed by ALK I1171T mutation in a patient with ALK-EML4 fusion-positive LUAD. After progression on multiple lines of therapy, we describe our experience of managing ALK-mutant LUAD and transformed SCLC with a novel combination of lorlatinib and temozolomide. We also briefly summarize cases of endothelial to mesenchymal transformation ALK-mutant LUAD from the literature.
+DA  - 2023/07//undefined
+PY  - 2023
+DO  - 10.1016/j.jtocrr.2023.100536
+VL  - 4
+IS  - 7
+SP  - 100536
+J2  - JTO Clin Res Rep
+LA  - eng
+SN  - 2666-3643
+UR  - https://pubmed.ncbi.nlm.nih.gov/37456921
+AN  - 37456921
+DB  - PubMed
+KW  - ALK I1171T mutation
+KW  - ALK-EML4
+KW  - ALK-positive NSCLC
+KW  - Case report
+KW  - Small cell transformation
+ER  - 
+
+TY  - JOUR
+TI  - Distinct response to GDF15 knockdown in pediatric and adult glioblastoma cell lines.
+AU  - Baroni, Mirella
+AU  - Marie, Suely Kazue Nagahashi
+AU  - Fedatto, Paola Fernanda
+AU  - Andrade, Augusto Faria
+AU  - Suazo, Veridiana Kill
+AU  - Cruzeiro, Gustavo Alencastro Veiga
+AU  - de Paula Queiroz, Rosane
+AU  - Tone, Luiz Gonzaga
+AU  - Scrideli, Carlos Alberto
+T2  - Journal of Neuro-oncology
+AB  - INTRODUCTION: Glioblastoma (GBM) is the most common malignant primary brain tumor affecting adults. In pediatric patients, GBM exhibits genetic variations distinct from those identified in the adult GBM phenotype. This tumor exhibits complex genetic changes leading to malignant progression and resistance to standard therapies including radiotherapy and temozolomide treatment. The GDF15 gene codes for a growth factor whose expression is altered in the presence of inflammations and malignancies. GDF15 is associated with a poor prognosis and with radio- and chemoresistance in a variety of tumors. The aim of this study was to compare the response to GDF15 knockdown in adult (U343) and pediatric (KNS42) GBM cell line models. METHODS: The expression of the GDF15 gene was investigated by qRT-PCR and overexpression was identified in both GBM cell lines. The KNS42 and U343 cell lines were submitted to lentiviral transduction with shRNA of GDF15 and validated at the protein level. To understand the difference between cell lines, RNAseq was performed after GDF15 knockdown. RESULTS: The data obtained demonstrated that the pathways were differentially expressed in adult GBM and pediatric GBM cell lines. This was confirmed by functional assays perfomed after independent treatments (radiotherapy and TMZ). CONCLUSION: These results demonstrated that GBM cell lines had distinct responses to GDF15 knockdown, a fact that can be explained by the different molecular profile of pediatric and adult GBM.
+DA  - 2018/08//undefined
+PY  - 2018
+DO  - 10.1007/s11060-018-2853-1
+VL  - 139
+IS  - 1
+SP  - 51
+EP  - 60
+J2  - J Neurooncol
+LA  - eng
+SN  - 1573-7373
+UR  - https://pubmed.ncbi.nlm.nih.gov/29671197
+AN  - 29671197
+DB  - PubMed
+KW  - Radiotherapy
+KW  - Temozolomide
+KW  - GDF15
+KW  - Glioblastoma
+KW  - RNAseq
+KW  - ShRNA
+ER  - 
+
+TY  - JOUR
+TI  - A novel enhancer regulates MGMT expression and promotes temozolomide resistance in glioblastoma.
+AU  - Chen, Xiaoyue
+AU  - Zhang, Minjie
+AU  - Gan, Haiyun
+AU  - Wang, Heping
+AU  - Lee, Jeong-Heon
+AU  - Fang, Dong
+AU  - Kitange, Gaspar J
+AU  - He, Lihong
+AU  - Hu, Zeng
+AU  - Parney, Ian F
+AU  - Meyer, Fredric B
+AU  - Giannini, Caterina
+AU  - Sarkaria, Jann N
+AU  - Zhang, Zhiguo
+T2  - Nature Communications
+AB  - Temozolomide (TMZ) was used for the treatment of glioblastoma (GBM) for over a decade, but its treatment benefits are limited by acquired resistance, a process that remains incompletely understood. Here we report that an enhancer, located between the promoters of marker of proliferation Ki67 (MKI67) and O6-methylguanine-DNA-methyltransferase (MGMT) genes, is activated in TMZ-resistant patient-derived xenograft (PDX) lines and recurrent tumor samples. Activation of the enhancer correlates with increased MGMT expression, a major known mechanism for TMZ resistance. We show that forced activation of the enhancer in cell lines with low MGMT expression results in elevated MGMT expression. Deletion of this enhancer in cell lines with high MGMT expression leads to a dramatic reduction of MGMT and a lesser extent of Ki67 expression, increased TMZ sensitivity, and impaired proliferation. Together, these studies uncover a mechanism that regulates MGMT expression, confers TMZ resistance, and potentially regulates tumor proliferation.
+DA  - 2018/07//undefined
+PY  - 2018
+DO  - 10.1038/s41467-018-05373-4
+VL  - 9
+IS  - 1
+SP  - 2949
+J2  - Nat Commun
+LA  - eng
+SN  - 2041-1723
+UR  - https://pubmed.ncbi.nlm.nih.gov/30054476
+AN  - 30054476
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+TI  - Bivalent activity of super-enhancer RNA LINC02454 controls 3D chromatin structure and regulates glioma sensitivity to temozolomide.
+AU  - Shi, Tengfei
+AU  - Guo, Dianhao
+AU  - Zheng, Yaoqiang
+AU  - Wang, Wenbin
+AU  - Bi, Jinfang
+AU  - He, Anshun
+AU  - Fan, Sibo
+AU  - Su, Guangsong
+AU  - Zhao, Xueyuan
+AU  - Zhao, Zhenhao
+AU  - Song, Yingjie
+AU  - Sun, Shupeng
+AU  - Li, Peng
+AU  - Zhao, Zhongfang
+AU  - Shi, Jiandang
+AU  - Lu, Wange
+AU  - Zhang, Lei
+T2  - Cell Death & Disease
+AB  - Glioma cell sensitivity to temozolomide (TMZ) is critical for effective treatment and correlates with patient survival, although mechanisms underlying this activity are unclear. Here, we reveal a new mechanism used by glioma cells to modulate TMZ sensitivity via regulation of SORBS2 and DDR1 genes by super-enhancer RNA LINC02454. We report that LINC02454 activity increases glioma cell TMZ sensitivity by maintaining long-range chromatin interactions between SORBS2 and the LINC02454 enhancer. By contrast, LINC02454 activity also decreased glioma cell TMZ sensitivity by promoting DDR1 expression. Our study suggests a bivalent function for super-enhancer RNA LINC02454 in regulating glioma cell sensitivity to TMZ.
+DA  - 2024/01//undefined
+PY  - 2024
+DO  - 10.1038/s41419-023-06392-w
+VL  - 15
+IS  - 1
+SP  - 6
+J2  - Cell Death Dis
+LA  - eng
+SN  - 2041-4889
+UR  - https://pubmed.ncbi.nlm.nih.gov/38177123
+AN  - 38177123
+DB  - PubMed
+ER  - 
+
+TY  - JOUR
+TI  - Identification of potential glioma drug resistance target proteins based on ultra-performance liquid chromatography-mass spectrometry differential proteomics.
+AU  - Li, Da
+AU  - Yan, Jun
+AU  - Li, Kang
+AU  - Yang, Qingcheng
+AU  - Bian, Liping
+AU  - Lin, Bencheng
+AU  - Liu, Xiaohua
+AU  - Xi, Zhuge
+T2  - PeerJ
+AB  - In this study, to screen for candidate markers of temozolomide (TMZ) resistance in glioblastoma, we artificially established TMZ drug-resistant glioblastoma (GBM) cell lines, U251-TMZ and U87-TMZ. In the U251-TMZ and U87-TMZ cell lines, we screened and analyzed differentially expressed proteins using ultra-performance liquid chromatography-mass spectrometry (UPLC-MS) differential proteomics. Compared with the U251 and U87 control cell lines, 95 differential proteins were screened in the U251-TMZ and U87-TMZ cell lines, of which 28 proteins were upregulated and 67 proteins were down-regulated. Gene Ontology (GO) and Kyoto Encyclopedia of Genes and Genomes (KEGG) analyses of the co-upregulated proteins showed that most of the differentially expressed proteins were located in the cytoplasm and were significantly upregulated in the biological processes related to vesicular transport in the intimal system and inflammatory response mediated by myeloid leukocytes. Seven candidates were identified as potential GBM markers of TMZ resistance. Combined with existing research findings, our study supports that UAP1L1 and BCKDK are promising potential markers of TMZ resistance in GBM. This is important for further understanding the molecular mechanisms that drive the development and enhancement of TMZ resistance.
+DA  - 2023///
+PY  - 2023
+DO  - 10.7717/peerj.16426
+VL  - 11
+SP  - e16426
+J2  - PeerJ
+LA  - eng
+SN  - 2167-8359
+UR  - https://pubmed.ncbi.nlm.nih.gov/38054015
+AN  - 38054015
+DB  - PubMed
+KW  - Glioma drug resistance
+KW  - Proteomics
+KW  - TMZ
+KW  - Ultra-performance liquid chromatography-mass spectrometry
+ER  - 
+
+TY  - JOUR
+TI  - VRK1 Depletion Facilitates the Synthetic Lethality of Temozolomide and Olaparib in Glioblastoma Cells.
+AU  - Navarro-Carrasco, Elena
+AU  - Lazo, Pedro A
+T2  - Frontiers In Cell and Developmental Biology
+AB  - BACKGROUND: Glioblastomas treated with temozolomide frequently develop resistance to pharmacological treatments. Therefore, there is a need to find alternative drug targets to reduce treatment resistance based on tumor dependencies. A possibility is to target simultaneously two proteins from different DNA-damage repair pathways to facilitate tumor cell death. Therefore, we tested whether targeting the human chromatin kinase VRK1 by RNA interference can identify this protein as a novel molecular target to reduce the dependence on temozolomide in combination with olaparib, based on synthetic lethality. MATERIALS AND METHODS: Depletion of VRK1, an enzyme that regulates chromatin dynamic reorganization and facilitates resistance to DNA damage, was performed in glioblastoma cells treated with temozolomide, an alkylating agent used for GBM treatment; and olaparib, an inhibitor of PARP-1, used as sensitizer. Two genetically different human glioblastoma cell lines, LN-18 and LN-229, were used for these experiments. The effect on the DNA-damage response was followed by determination of sequential steps in this process: H4K16ac, γH2AX, H4K20me2, and 53BP1. RESULTS: The combination of temozolomide and olaparib increased DNA damage detected by labeling free DNA ends, and chromatin relaxation detected by H4K16ac. The combination of both drugs, at lower doses, resulted in an increase in the DNA damage response detected by the formation of γH2AX and 53BP1 foci. VRK1 depletion did not prevent the generation of DNA damage in TUNEL assays, but significantly impaired the DNA damage response induced by temozolomide and olaparib, and mediated by γH2AX, H4K20me2, and 53BP1. The combination of these drugs in VRK1 depleted cells resulted in an increase of glioblastoma cell death detected by annexin V and the processing of PARP-1 and caspase-3. CONCLUSION: Depletion of the chromatin kinase VRK1 promotes tumor cell death at lower doses of a combination of temozolomide and olaparib treatments, and can be a novel alternative target for therapies based on synthetic lethality.
+DA  - 2021///
+PY  - 2021
+DO  - 10.3389/fcell.2021.683038
+VL  - 9
+SP  - 683038
+J2  - Front Cell Dev Biol
+LA  - eng
+SN  - 2296-634X
+UR  - https://pubmed.ncbi.nlm.nih.gov/34195200
+AN  - 34195200
+DB  - PubMed
+KW  - glioblastoma
+KW  - DNA damage response
+KW  - olaparib
+KW  - temozolomide
+KW  - VRK1
+ER  - 
+
+TY  - JOUR
+TI  - Unveiling the role of TAGLN2 in glioblastoma: From proneural-mesenchymal transition to Temozolomide resistance
+AU  - Li, Yang
+AU  - Wang, Xinyu
+AU  - Xu, Tianye
+AU  - Xu, Fan
+AU  - Chen, Tongzheng
+AU  - Li, Zhengji
+AU  - Wang, Yiwei
+AU  - Chen, Hao
+AU  - Ming, Jianguang
+AU  - Cai, Jinquan
+AU  - Jiang, Chuanlu
+AU  - Meng, Xiangqi
+T2  - Cancer Letters
+DA  - 2024/08//
+PY  - 2024
+DO  - 10.1016/j.canlet.2024.217107
+DP  - DOI.org (Crossref)
+VL  - 598
+SP  - 217107
+J2  - Cancer Letters
+LA  - en
+SN  - 03043835
+ST  - Unveiling the role of TAGLN2 in glioblastoma
+UR  - https://linkinghub.elsevier.com/retrieve/pii/S0304383524005020
+Y2  - 2024/09/21/12:58:57
+ER  - 
+
+TY  - JOUR
+TI  - A Novel Signaling Complex between TROY and EGFR Mediates Glioblastoma Cell Invasion
+AU  - Ding, Zonghui
+AU  - Roos, Alison
+AU  - Kloss, Jean
+AU  - Dhruv, Harshil
+AU  - Peng, Sen
+AU  - Pirrotte, Patrick
+AU  - Eschbacher, Jennifer M.
+AU  - Tran, Nhan L.
+AU  - Loftus, Joseph C.
+T2  - Molecular Cancer Research
+AB  - Abstract
+            Glioblastoma is the most frequent primary brain tumor in adults and a highly lethal malignancy with a median survival of about 15 months. The aggressive invasion of the surrounding normal brain makes complete surgical resection impossible, increases the resistance to radiation and chemotherapy, and assures tumor recurrence. Thus, there is an urgent need to develop innovative therapeutics to target the invasive tumor cells for improved treatment outcomes of this disease. Expression of TROY (TNFRSF19), a member of the tumor necrosis factor (TNF) receptor family, increases with increasing glial tumor grade and inversely correlates with patient survival. Increased expression of TROY stimulates glioblastoma cell invasion in vitro and in vivo and increases resistance to temozolomide and radiation therapy. Conversely, silencing TROY expression inhibits glioblastoma cell invasion, increases temozolomide sensitivity, and prolongs survival in an intracranial xenograft model. Here, a novel complex is identified between TROY and EGFR, which is mediated predominantly by the cysteine-rich CRD3 domain of TROY. Glioblastoma tumors with elevated TROY expression have a statistically positive correlation with increased EGFR expression. TROY expression significantly increases the capacity of EGF to stimulate glioblastoma cell invasion, whereas depletion of TROY expression blocks EGF stimulation of glioblastoma cell invasion. Mechanistically, TROY expression modulates EGFR signaling by facilitating EGFR activation and delaying EGFR receptor internalization. Moreover, the association of EGFR with TROY increases TROY-induced NF-κB activation. These findings substantiate a critical role for the TROY–EGFR complex in regulation of glioblastoma cell invasion.
+            Implications: The TROY–EGFR signaling complex emerges as a potential therapeutic target to inhibit glioblastoma cell invasion. Mol Cancer Res; 16(2); 322–32. ©2017 AACR.
+DA  - 2018/02/01/
+PY  - 2018
+DO  - 10.1158/1541-7786.MCR-17-0454
+DP  - DOI.org (Crossref)
+VL  - 16
+IS  - 2
+SP  - 322
+EP  - 332
+LA  - en
+SN  - 1541-7786, 1557-3125
+UR  - https://aacrjournals.org/mcr/article/16/2/322/89831/A-Novel-Signaling-Complex-between-TROY-and-EGFR
+Y2  - 2024/09/21/12:59:21
+L1  - https://europepmc.org/articles/pmc5805628?pdf=render
+ER  - 
+
+TY  - JOUR
+TI  - Case of multifocal glioblastoma with four fusion transcripts of <i>ALK</i> , <i>FGFR2</i> , <i>NTRK2</i> , and <i>NTRK3</i> genes stresses the need for tumor tissue multisampling for transcriptomic analysis
+AU  - Samii, Amir
+AU  - Sorokin, Maxim
+AU  - Kar, Souvik
+AU  - Makovskaia, Luidmila
+AU  - Garazha, Andrew
+AU  - Hartmann, Christian
+AU  - Moisseev, Aleksey
+AU  - Kim, Ella
+AU  - Giese, Alf
+AU  - Buzdin, Anton
+T2  - Molecular Case Studies
+AB  - Glioblastoma multiforme (GBM) is the most malignant brain tumor with patient mortality rate close to 100%, 5-yr survival rate of ∼5%, and a median survival of 14 mo. GBMs have notorious histomorphologic and molecular heterogeneities thus giving hope for development of future personalized therapies. We describe here a case of a 48-yr-old male patient with three-nodular GBM. To address the question of intratumoral molecular heterogeneity, a comparative analysis of gene expression was performed by using multiple samples collected from different tumor sites with the aid of intraoperative magnetic resonance imaging (MRI). Sixteen GBM biosamples from parietal, temporal, and temporo-polar localizations were collected from primary, recurrent, and second recurrent tumors and were obtained and investigated by RNA sequencing. Our investigations revealed that biosamples derived from different tumor sites differ in their gene expression profiles with classical or mesenchymal signatures associated with clinically distinct molecular subtypes of GBM found within the same tumor. The results also showed significant differences in the expression of genes specific for targeted therapeutics. Our investigations have enabled the identification of four novel fusion transcripts—
+              KIF5C
+              -
+              NTRK3
+              ,
+              AC016907.2
+              -
+              ALK
+              ,
+              CNTNAP3
+              -
+              NTRK2
+              , and
+              ZNF135
+              -
+              FGFR2
+              —each present in only one sample. We found no differences between untreated and recurrent stages in the expression levels of genes involved in fusion transcripts, suggesting the lack of association between fusion transcript and treatment response. In contrast, longitudinal changes in the expression of
+              VEGF
+              and
+              MGMT
+              genes were concordant with the tumor response to bevacizumab and temozolomide. Our study underscores the importance of integrating a multisampling approach and RNA sequencing and demonstrates the predictive merit of an integrated approach for differentiating genomic aberrations associated with untreated or post-treatment recurrent GBMs.
+DA  - 2021/08//
+PY  - 2021
+DO  - 10.1101/mcs.a006100
+DP  - DOI.org (Crossref)
+VL  - 7
+IS  - 4
+SP  - a006100
+J2  - Cold Spring Harb Mol Case Stud
+LA  - en
+SN  - 2373-2865, 2373-2873
+UR  - http://molecularcasestudies.cshlp.org/lookup/doi/10.1101/mcs.a006100
+Y2  - 2024/09/21/12:59:54
+L1  - https://molecularcasestudies.cshlp.org/content/7/4/a006100.full.pdf
+ER  - 
+
+TY  - JOUR
+TI  - Effect of CYP3A-inducing anti-epileptics on sorafenib exposure: results of a phase II study of sorafenib plus daily temozolomide in adults with recurrent glioblastoma
+AU  - Reardon, David A.
+AU  - Vredenburgh, James J.
+AU  - Desjardins, Annick
+AU  - Peters, Katherine
+AU  - Gururangan, Sridharan
+AU  - Sampson, John H.
+AU  - Marcello, Jennifer
+AU  - Herndon, James E.
+AU  - McLendon, Roger E.
+AU  - Janney, Dorothea
+AU  - Friedman, Allan H.
+AU  - Bigner, Darell D.
+AU  - Friedman, Henry S.
+T2  - Journal of Neuro-Oncology
+DA  - 2011/01//
+PY  - 2011
+DO  - 10.1007/s11060-010-0217-6
+DP  - DOI.org (Crossref)
+VL  - 101
+IS  - 1
+SP  - 57
+EP  - 66
+J2  - J Neurooncol
+LA  - en
+SN  - 0167-594X, 1573-7373
+ST  - Effect of CYP3A-inducing anti-epileptics on sorafenib exposure
+UR  - http://link.springer.com/10.1007/s11060-010-0217-6
+Y2  - 2024/09/21/13:00:14
+L1  - https://europepmc.org/articles/pmc3102498?pdf=render
+ER  - 
+
+TY  - JOUR
+TI  - Molecular mechanism of adenomatous polyposis coli-induced blockade of base excision repair pathway in colorectal carcinogenesis
+AU  - Narayan, Satya
+AU  - Sharma, Ritika
+T2  - Life Sciences
+AB  - Colorectal cancer (CRC) is the third leading cause of death in both men and women in North America. Despite chemotherapeutic efforts, CRC is associated with a high degree of morbidity and mortality. Thus, to develop effective treatment strategies for CRC, one needs knowledge of the pathogenesis of cancer development and cancer resistance. It is suggested that colonic tumors or cell lines harbor truncated adenomatous polyposis coli (APC) without DNA repair inhibitory (DRI)-domain. It is also thought that the product of the APC gene can modulate base excision repair (BER) pathway through an interaction with DNA polymerase β (Pol-β) and flap endonuclease 1 (FEN1) to mediate CRC cell apoptosis. The proposed therapy with temozolomide (TMZ) exploits this particular pathway; however, a high percentage of colorectal tumors continue to develop resistance to chemotherapy due to mismatch repair (MMR)-deficiency. In the present communication, we have comprehensively reviewed a critical issue that has not been addressed previously: a novel mechanism by which APC-induced blockage of single nucleotide (SN)- and long-patch (LP)-BER play role in DNA-alkylation damage-induced colorectal carcinogenesis.
+DA  - 2015/10//
+PY  - 2015
+DO  - 10.1016/j.lfs.2015.08.019
+DP  - DOI.org (Crossref)
+VL  - 139
+SP  - 145
+EP  - 152
+J2  - Life Sciences
+LA  - en
+SN  - 00243205
+UR  - https://linkinghub.elsevier.com/retrieve/pii/S0024320515300035
+Y2  - 2024/09/21/13:00:29
+L1  - https://europepmc.org/articles/pmc4604609?pdf=render
+ER  - 
+
+TY  - JOUR
+TI  - Towards personalized medicine with a three-dimensional micro-scale perfusion-based two-chamber tissue model system
+AU  - Ma, Liang
+AU  - Barker, Jeremy
+AU  - Zhou, Changchun
+AU  - Li, Wei
+AU  - Zhang, Jing
+AU  - Lin, Biaoyang
+AU  - Foltz, Gregory
+AU  - Küblbeck, Jenni
+AU  - Honkakoski, Paavo
+T2  - Biomaterials
+DA  - 2012/06//
+PY  - 2012
+DO  - 10.1016/j.biomaterials.2012.02.054
+DP  - DOI.org (Crossref)
+VL  - 33
+IS  - 17
+SP  - 4353
+EP  - 4361
+J2  - Biomaterials
+LA  - en
+SN  - 01429612
+UR  - https://linkinghub.elsevier.com/retrieve/pii/S0142961212002591
+Y2  - 2024/09/21/13:00:45
+L1  - https://europepmc.org/articles/pmc3569495?pdf=render
+ER  - 
+
