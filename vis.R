@@ -25,6 +25,9 @@ appendWithName = function(lst_, ...) {
   
 }
 
+color_morandi = c('#f38684', '#afafad', '#8ac3c6', '#87b8de', '#999fbf', '#a48999')
+color_macaron = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8")
+
 # vis ---------------------------------------------------------------------
 
 ## predict GDSC ----
@@ -74,7 +77,7 @@ density_plot = function(df_, name_, stat_) {
         sprintf('%s-PCC: %.3f', name_, stat_), 
         x = unit(0.95, "npc"), y = unit(0.05, "npc"),  
         hjust = 1, vjust = 0, 
-        gp = gpar(col = "black", fontsize = 8, family = "mono", fontface = "bold")
+        gp = gpar(col = "black", fontsize = 8, family = "italic", fontface = "italic")
       )  
     )
   
@@ -88,7 +91,7 @@ lst_pic_gdsc = pmap(
 pic_pre_gdsc = plot_grid(plotlist = lst_pic_gdsc, nrow = 2)
 pic_pre_gdsc
 
-ggsave('result/fig/predict_GDSC.png', pic_pre_gdsc, width = 6, height = 6, dpi = 300)
+ggsave('result/fig/predict_GDSC.png', pic_pre_gdsc, width = 4.5, height = 4.5, bg = NULL)
 
 ## response ----
 
@@ -149,6 +152,49 @@ data_plot_response = list(
 
 ### case research ----
 
+mergePics_h = function(lstPics_, oneHeight_ = 1.2, lgd_ = F, lgdHeight_ = 0.5, funOnAll_ = \(pic_) pic_ + theme(), funOnOne_ = \() theme()) {
+  
+  theme_simple_ = theme(
+    axis.title.y = element_blank()
+  )
+  
+  if (lgd_) {
+    
+    len_lst_ = length(lstPics_$pics)
+    
+    lst_res_ = append(lst(lstPics_$lgd), map2(
+      lstPics_$pics, seq_along(lstPics_$pics), \(pic_, ind_) {
+        if (ind_ != 1) {
+          pic_ + theme_simple_
+        } else {
+          pic_ + funOnOne_()
+        }
+      }
+    ) |> map(funOnAll_))
+    
+    # browser()
+    plot_grid(plotlist = lst_res_, nrow = 1, rel_widths = c(lgdHeight_, rep(1, len_lst_)))
+    
+  } else {
+    
+    len_lst_ = length(lstPics_$pics)
+    
+    lst_res_ = map2(
+      lstPics_$pics, seq_along(lstPics_$pics), \(pic_, ind_) {
+        if (ind_ != 1) {
+          pic_ + theme_simple_
+        } else {
+          pic_ + funOnOne_()
+        }
+      }
+    ) |> map(funOnAll_)
+    
+    plot_grid(plotlist = lst_res_, nrow = 1, rel_widths = c(oneHeight_, rep(1, len_lst_-1)))
+    
+  }
+  
+}
+
 sample_glioma = data_response |> 
   mutate(sample = paste0(patient.arr, '-01')) |> 
   filter(cancers %in% c('GBM', 'LGG')) |> 
@@ -159,20 +205,6 @@ line_plot = function(df_, title_, nlevel_ = 2) {
   
   if (nlevel_ == 4) x_table_ = factor(c('PD', 'SD', 'PR', 'CR'), levels = c('PD', 'SD', 'PR', 'CR'))
   if (nlevel_ == 2) x_table_ = factor(c('PD/SD', 'PD/SD', 'PR/CR', 'PR/CR'), levels = c('PD/SD', 'PR/CR'))
-  
-  scale_fill_ = function() {
-    
-    if (nlevel_ == 4) {
-      
-      scale_fill_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8"))
-      
-    } else {
-      
-      scale_fill_manual(values = c("#4A9D47", "#96C3D8"))
-      
-    }
-    
-  }
   
   # browser()
   df_ = df_ |> 
@@ -185,30 +217,40 @@ line_plot = function(df_, title_, nlevel_ = 2) {
   
   stat_ = summary(lm(pred ~ as.numeric(response), df_))
   p_ = stat_$coefficients |> as_tibble() |> _[2, 4] |> _[[1]] |> signif(digits = 3)
-  p_ = paste0('Regression Significance: ', p_)
+  p_ = paste0('ANOVA: ', p_)
   
   summary_ |> 
     ggplot() + 
-    geom_errorbar(aes(response, ymin = mean-sd, ymax = mean+sd), width = 0.1, linewidth = 0.75, color = '#009995', alpha = 0.5) + 
-    geom_line(aes(response, mean, group = 1), linewidth = 1, linewidth = 0.75, color = '#009995', alpha = 0.3) + 
-    geom_jitter(aes(response, pred, fill = response), width = 0.2, color = 'white', data = df_, shape = 21, alpha = 0.75) +
-    scale_fill_() +
-    xlab(NULL) +
+    geom_jitter(aes(response, pred), fill = '#55a9ab', size = 2, width = 0.2, color = 'white', data = df_, shape = 21, alpha = 0.75) +
+    geom_errorbar(aes(response, ymin = mean-sd, ymax = mean+sd), linetype = 2, width = 0.1, linewidth = 1.2, color = '#af58ac', alpha = 0.5) + 
+    geom_line(aes(response, mean, group = 1), linetype = 3, linewidth = 1.2, color = '#af58ac', alpha = 0.5) + 
+    xlab(title_) +
     ylab('Predicted Response') +
-    labs(title = title_, subtitle = p_) +
-    theme_classic() + 
+    # labs(subtitle = p_) +
+    theme_bw() + 
     theme(legend.position = 'none', 
-          # panel.background = element_rect(fill = '#F0FFFF'), 
-          panel.grid.major = element_blank(), 
-          panel.grid.minor = element_blank(), 
-          plot.title = element_text(hjust = 0.5), 
-          plot.subtitle = element_text(hjust = 1),
+          panel.background = element_rect(fill = '#f4faff'), 
+          panel.grid.major = element_line(color = 'white'), 
+          panel.grid.minor = element_line(color = 'white'), 
+          plot.title = element_text(hjust = 0.55), 
+          plot.subtitle = element_text(hjust = 1, size = 8, face = 'italic'),
           plot.title.position = "plot", 
-          axis.text.x = element_text(size = 10))
+          axis.text.x = element_text(size = 10)) +
+    annotation_custom(
+      grob = textGrob(
+        p_, 
+        x = unit(0.95, "npc"), y = unit(0.95, "npc"),  
+        hjust = 1, vjust = 1, 
+        gp = gpar(col = "black", fontsize = 8, family = "italic", fontface = "italic")
+      )  
+    )
   
 }
 
-imap(split(data_plot_response, data_plot_response$model), line_plot, nlevel_ = 2)
+lst_pic_line = imap(split(data_plot_response, data_plot_response$model), line_plot, nlevel_ = 2)
+res_pic_line = mergePics_h(list(pics = lst_pic_line))
+res_pic_line
+ggsave('result/fig/TMZ.png', res_pic_line, width = 7, height = 4, bg = NULL)
 
 ### compare ----
 
@@ -367,22 +409,22 @@ mergePics = function(lstPics_, oneHeight_ = 1.5, lgd_ = F, lgdHeight_ = 0.5, fun
   
 }
 
-jitter_color = function(pic_) {
+jitter_color = function(pic_, color_ = color_morandi) {
   pic_ + 
     geom_boxplot(fill = NA, outlier.shape = NA) +
     geom_jitter() +
-    scale_fill_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8")) +
-    scale_color_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8"))
+    scale_fill_manual(values = color_) +
+    scale_color_manual(values = color_)
 }
 
-nojitter_color = function(pic_) {
+nojitter_color = function(pic_, color_ = color_morandi) {
   pic_ + 
     geom_boxplot(fill = NA, outlier.shape = NA) +
-    scale_fill_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8")) +
-    scale_color_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8"))
+    scale_fill_manual(values = color_) +
+    scale_color_manual(values = color_)
 }
 
-jitter_color_label = function(pic_) {
+jitter_color_label = function(pic_, color_ = color_morandi) {
   # browser()
   
   stat_ = summary(lm(pred ~ as.numeric(response), pic_$data))
@@ -395,8 +437,8 @@ jitter_color_label = function(pic_) {
     geom_boxplot(fill = NA, outlier.shape = NA) +
     geom_jitter() +
     geom_text(aes(x, y, label = p), data = stat_, inherit.aes = F, family = "mono", fontface = "bold") +
-    scale_fill_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8")) +
-    scale_color_manual(values = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8")) +
+    scale_fill_manual(values = color_) +
+    scale_color_manual(values = color_) +
     scale_x_discrete(labels = c('PD', 'SD', 'PR', 'CR'))
   
 }
