@@ -50,12 +50,35 @@ biased_map = function(lst_, fun_, luckyOnes_ = 1, reverse_ = F) {
   
 }
 
+split_recursively = function(tidy_df_, value_ = names(tidy_df_)[length(tidy_df_)]) {
+  
+  tidy_df_ = tidy_df_ |> relocate(!!value_, .after = everything())
+  
+  if (ncol(tidy_df_) == 1) return(tidy_df_[[1]][1])
+  
+  drop_ = names(tidy_df_)[[1]]
+  keep_ = names(tidy_df_)[-1]
+  
+  lst_df_ = split(tidy_df_[, keep_], tidy_df_[[drop_]])
+  
+  for (ind_ in names(lst_df_)) {
+    
+    lst_df_[[ind_]] = split_recursively(lst_df_[[ind_]])
+    
+  }
+  
+  return(lst_df_)
+  
+}
+
 color_morandi = c('#f38684', '#afafad', '#8ac3c6', '#87b8de', '#999fbf', '#a48999')
 color_macaron = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8")
 
 # vis ---------------------------------------------------------------------
 
-## predict GDSC ----
+## GDSC ----
+
+### GDSC-pic ----
 
 library(grid)
 library(ggbreak)
@@ -117,6 +140,11 @@ pic_pre_gdsc = plot_grid(plotlist = lst_pic_gdsc, nrow = 2)
 pic_pre_gdsc
 
 ggsave('result/fig/predict_GDSC.png', pic_pre_gdsc, width = 4.5, height = 4.5, bg = NULL)
+
+### GDSC-doc ----
+
+tibble(dataset = names(lst_stat_gdsc), value = unlist(lst_stat_gdsc)) |> 
+  write_csv('docs/resource/df_stat_GDSC.csv')
 
 ## response ----
 
@@ -490,6 +518,19 @@ rel_width = 1.2
 lst_cv_pic_meta = plot_grid(plotlist = map(names_pic, get) , nrow = 1, rel_widths = c(rel_width, 1, 1, rel_width, 1, 1))
 sizef = 1.3
 ggsave('result/fig/cv_meta.png', lst_cv_pic_meta, width = 14/sizef, height = 11/sizef)
+
+### cv-doc ---- 
+
+names_reg = expand.grid('reg', c('cv', 'cell', 'drug'), c('ccle', 'gdsc')) |> 
+  mutate(res = str_c(Var1, Var2, Var3, sep = '_')) |> 
+  pull(res)
+
+df_indicator_cv = names_reg[c(1, 4)] |> 
+  map(~ get(.x) |> mutate(dataset = .x |> str_split('_') |> _[[1]][[3]] |> toupper())) |> 
+  bind_rows() |> 
+  group_by(dataset, .metric) |> 
+  summarise(meanNsd = sprintf('%.3f±%.3f', mean(.estimate), sd(.estimate)))
+df_indicator_cv |> write_csv('docs/resource/df_indicator_cv.csv')
 
 ### edible-drug ----
 

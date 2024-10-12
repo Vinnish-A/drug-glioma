@@ -1,0 +1,17 @@
+dataset,.metric,meanNsd
+CCLE,ccc,0.922±0.018
+CCLE,huber_loss,0.450±0.107
+CCLE,mae,0.817±0.129
+CCLE,mse,1.165±0.306
+CCLE,rmse,1.071±0.136
+CCLE,rpd,2.625±0.306
+CCLE,rsq,0.852±0.034
+CCLE,spearman,0.893±0.026
+GDSC,ccc,0.922±0.017
+GDSC,huber_loss,0.460±0.103
+GDSC,mae,0.829±0.125
+GDSC,mse,1.201±0.298
+GDSC,rmse,1.089±0.132
+GDSC,rpd,2.638±0.300
+GDSC,rsq,0.854±0.033
+GDSC,spearman,0.894±0.026
