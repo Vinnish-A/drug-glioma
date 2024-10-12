@@ -25,6 +25,31 @@ appendWithName = function(lst_, ...) {
   
 }
 
+biased_map = function(lst_, fun_, luckyOnes_ = 1, reverse_ = F) {
+  
+  luckyOnes_[luckyOnes_ < 0] = luckyOnes_[luckyOnes_ < 0] + 1 + length(lst_)
+  luckyOnes_ = sort(luckyOnes_)
+  unluckyOnes_ = setdiff(1:length(lst_), luckyOnes_)
+  
+  if (!reverse_) {
+    
+    for (i_ in luckyOnes_) {
+      lst_[[i_]] = fun_(lst_[[i_]])
+    }
+    
+  } else {
+    
+    for (i_ in unluckyOnes_) {
+      lst_[[i_]] = fun_(lst_[[i_]])
+    }
+    
+  }
+  
+  return(lst_)
+  
+  
+}
+
 color_morandi = c('#f38684', '#afafad', '#8ac3c6', '#87b8de', '#999fbf', '#a48999')
 color_macaron = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8")
 
@@ -152,48 +177,7 @@ data_plot_response = list(
 
 ### case research ----
 
-mergePics_h = function(lstPics_, oneHeight_ = 1.2, lgd_ = F, lgdHeight_ = 0.5, funOnAll_ = \(pic_) pic_ + theme(), funOnOne_ = \() theme()) {
-  
-  theme_simple_ = theme(
-    axis.title.y = element_blank()
-  )
-  
-  if (lgd_) {
-    
-    len_lst_ = length(lstPics_$pics)
-    
-    lst_res_ = append(lst(lstPics_$lgd), map2(
-      lstPics_$pics, seq_along(lstPics_$pics), \(pic_, ind_) {
-        if (ind_ != 1) {
-          pic_ + theme_simple_
-        } else {
-          pic_ + funOnOne_()
-        }
-      }
-    ) |> map(funOnAll_))
-    
-    # browser()
-    plot_grid(plotlist = lst_res_, nrow = 1, rel_widths = c(lgdHeight_, rep(1, len_lst_)))
-    
-  } else {
-    
-    len_lst_ = length(lstPics_$pics)
-    
-    lst_res_ = map2(
-      lstPics_$pics, seq_along(lstPics_$pics), \(pic_, ind_) {
-        if (ind_ != 1) {
-          pic_ + theme_simple_
-        } else {
-          pic_ + funOnOne_()
-        }
-      }
-    ) |> map(funOnAll_)
-    
-    plot_grid(plotlist = lst_res_, nrow = 1, rel_widths = c(oneHeight_, rep(1, len_lst_-1)))
-    
-  }
-  
-}
+library(grid)
 
 sample_glioma = data_response |> 
   mutate(sample = paste0(patient.arr, '-01')) |> 
@@ -247,9 +231,9 @@ line_plot = function(df_, title_, nlevel_ = 2) {
   
 }
 
-lst_pic_line = imap(split(data_plot_response, data_plot_response$model), line_plot, nlevel_ = 2)
-res_pic_line = mergePics_h(list(pics = lst_pic_line))
-res_pic_line
+lst_pic_line = imap(split(data_plot_response, data_plot_response$model), line_plot, nlevel_ = 2) |> 
+  biased_map(\(pic_) pic_ + theme(axis.title.y = element_blank()), reverse_ = T)
+res_pic_line = plot_grid(plotlist = lst_pic_line, nrow = 1, rel_widths = c(1.2, 1, 1, 1))
 ggsave('result/fig/TMZ.png', res_pic_line, width = 7, height = 4, bg = NULL)
 
 ### compare ----
@@ -364,48 +348,13 @@ rawPic = function(lst_, split_, ...) {
   
 }
 
-mergePics = function(lstPics_, oneHeight_ = 1.5, lgd_ = F, lgdHeight_ = 0.5, funOnAll_ = \(pic_) pic_ + theme(), funOnOne_ = \() theme()) {
+theme_dropx = function() {
   
-  theme_simple_ = theme(
+  theme(
     axis.line.x = element_blank(), 
     axis.text.x = element_blank(), 
     axis.title.x = element_blank()
   )
-  
-  if (lgd_) {
-    
-    len_lst_ = length(lstPics_$pics)
-    
-    lst_res_ = append(lst(lstPics_$lgd), map2(
-      lstPics_$pics, seq_along(lstPics_$pics), \(pic_, ind_) {
-        if (ind_ != len_lst_) {
-          pic_ + theme_simple_
-        } else {
-          pic_ + funOnOne_()
-        }
-      }
-    ) |> map(funOnAll_))
-    
-    # browser()
-    plot_grid(plotlist = lst_res_, ncol = 1, rel_heights = c(lgdHeight_, rep(1, len_lst_)))
-    
-  } else {
-    
-    len_lst_ = length(lstPics_$pics)
-    
-    lst_res_ = map2(
-      lstPics_$pics, seq_along(lstPics_$pics), \(pic_, ind_) {
-        if (ind_ != len_lst_) {
-          pic_ + theme_simple_
-        } else {
-          pic_ + funOnOne_()
-        }
-      }
-    ) |> map(funOnAll_)
-    
-    plot_grid(plotlist = lst_res_, ncol = 1, rel_heights = c(rep(1, len_lst_-1), oneHeight_))
-    
-  }
   
 }
 
@@ -421,7 +370,8 @@ nojitter_color = function(pic_, color_ = color_morandi) {
   pic_ + 
     geom_boxplot(fill = NA, outlier.shape = NA) +
     scale_fill_manual(values = color_) +
-    scale_color_manual(values = color_)
+    scale_color_manual(values = color_) + 
+    ylab(NULL)
 }
 
 jitter_color_label = function(pic_, color_ = color_morandi) {
@@ -529,24 +479,36 @@ lst_drug_gdsc = rawPic(reg_drug_gdsc, '.metric')
 
 ### cv-summary ----
 
+# disposible
+mergePics = function(lst_, fun_) {
+  
+  lst_$pics |> 
+    biased_map(\(pic_) pic_ + theme_italicX(), -1) |> 
+    biased_map(\(pic_) pic_ + theme_dropx(), -1, reverse_ = T) |> 
+    map(fun_) |> 
+    plot_grid(plotlist = _, ncol = 1, rel_heights = c(rep(1, 7), 1.5))
+  
+}
+
 # ccle
-pic_cv_ccle = mergePics(lst_cv_ccle, funOnAll_ = jitter_color, funOnOne_ = theme_italicX)
-pic_cell_ccle = mergePics(lst_cell_ccle, funOnAll_ = nojitter_color, funOnOne_ = theme_italicX)
-pic_drug_ccle = mergePics(lst_drug_ccle, funOnAll_ = nojitter_color, funOnOne_ = theme_italicX)
+pic_cv_ccle = mergePics(lst_cv_ccle, jitter_color)
+pic_cell_ccle = mergePics(lst_cell_ccle, nojitter_color)
+pic_drug_ccle = mergePics(lst_drug_ccle, nojitter_color)
 
 # gdsc
-pic_cv_gdsc = mergePics(lst_cv_gdsc, funOnAll_ = jitter_color, funOnOne_ = theme_italicX)
-pic_cell_gdsc = mergePics(lst_cell_gdsc, funOnAll_ = nojitter_color, funOnOne_ = theme_italicX)
-pic_drug_gdsc = mergePics(lst_drug_gdsc, funOnAll_ = nojitter_color, funOnOne_ = theme_italicX)
+pic_cv_gdsc = mergePics(lst_cv_gdsc, jitter_color)
+pic_cell_gdsc = mergePics(lst_cell_gdsc, nojitter_color)
+pic_drug_gdsc = mergePics(lst_drug_gdsc, nojitter_color)
 
 # meta
 names_pic = expand.grid('pic', c('cv', 'cell', 'drug'), c('ccle', 'gdsc')) |> 
   mutate(res = str_c(Var1, Var2, Var3, sep = '_')) |> 
   pull(res)
 
-lst_cv_pic_meta = plot_grid(plotlist = map(names_pic, get), nrow = 1)
+rel_width = 1.2
+lst_cv_pic_meta = plot_grid(plotlist = map(names_pic, get) , nrow = 1, rel_widths = c(rel_width, 1, 1, rel_width, 1, 1))
 sizef = 1.3
-ggsave('result/fig/cv_meta.png', lst_cv_pic_meta, width = 16/sizef, height = 10/sizef)
+ggsave('result/fig/cv_meta.png', lst_cv_pic_meta, width = 14/sizef, height = 11/sizef)
 
 ### edible-drug ----
 
