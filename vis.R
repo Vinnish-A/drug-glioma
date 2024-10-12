@@ -374,25 +374,6 @@ nojitter_color = function(pic_, color_ = color_morandi) {
     ylab(NULL)
 }
 
-jitter_color_label = function(pic_, color_ = color_morandi) {
-  # browser()
-  
-  stat_ = summary(lm(pred ~ as.numeric(response), pic_$data))
-  p_ = stat_$coefficients |> as_tibble() |> _[2, 4] |> _[[1]] |> signif(digits = 3)
-  yPos_ = quantile(pic_$data$pred, probs = 0.99)[['99%']]
-  stat_ = tibble(x = 3, y = yPos_, p = paste0('Regression Coefficients Pvalue: ', p_))
-  
-  
-  pic_ + 
-    geom_boxplot(fill = NA, outlier.shape = NA) +
-    geom_jitter() +
-    geom_text(aes(x, y, label = p), data = stat_, inherit.aes = F, family = "mono", fontface = "bold") +
-    scale_fill_manual(values = color_) +
-    scale_color_manual(values = color_) +
-    scale_x_discrete(labels = c('PD', 'SD', 'PR', 'CR'))
-  
-}
-
 theme_italicX = function() theme(axis.text.x = element_text(angle = 30, vjust = 0.85, hjust = 0.75))
 
 ### CCLE ----
@@ -579,4 +560,23 @@ pic_density_gdsc = cv_all_gdsc |>
 
 ggsave('result/pic_density_gdsc.png', pic_density_gdsc, width = 4, height = 4)
 
+# trash ----
 
+jitter_color_label = function(pic_, color_ = color_morandi) {
+  # browser()
+  
+  stat_ = summary(lm(pred ~ as.numeric(response), pic_$data))
+  p_ = stat_$coefficients |> as_tibble() |> _[2, 4] |> _[[1]] |> signif(digits = 3)
+  yPos_ = quantile(pic_$data$pred, probs = 0.99)[['99%']]
+  stat_ = tibble(x = 3, y = yPos_, p = paste0('Regression Coefficients Pvalue: ', p_))
+  
+  
+  pic_ + 
+    geom_boxplot(fill = NA, outlier.shape = NA) +
+    geom_jitter() +
+    geom_text(aes(x, y, label = p), data = stat_, inherit.aes = F, family = "mono", fontface = "bold") +
+    scale_fill_manual(values = color_) +
+    scale_color_manual(values = color_) +
+    scale_x_discrete(labels = c('PD', 'SD', 'PR', 'CR'))
+  
+}

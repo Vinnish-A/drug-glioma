@@ -28,7 +28,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## XXX generates reproducible high-precision drug response predictions.
 
+```markdown
+<!-- 交叉验证部分可以考虑添加数据拆分模式, 但目前的结果已较充足 -->
+```
 
+交叉验证是评估模型架构最常用的评估方法, 反应了架构从数据中学习的模式的有效性, 预测结果的一致性与可重复性. 研究收集了CCLE与GDSC的细胞系遗传学与药物动力学测量数据作为评估集合, 并关注对数化的半数抑制浓度作为DRP.  
 
 
 
