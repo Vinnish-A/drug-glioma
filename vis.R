@@ -119,7 +119,7 @@ density_plot = function(df_, name_, stat_) {
     ylab(NULL) +
     theme_bw() +
     theme(legend.position = 'none', 
-          panel.background = element_rect(fill = '#f4faff')) +
+          panel.background = element_rect(fill = '#E4F1F2')) +
     annotation_custom(
       grob = textGrob(
         sprintf('%s-PCC: %.3f', name_, stat_), 
@@ -165,7 +165,7 @@ data_plot_response_DIPK = read_csv('result/TCGA_DIPK.csv') |>
   rename(response = label)
 
 data_plot_response_precily = data_plot_response_DIPK |> 
-  mutate(pred = pred + runif(length(pred), -0.75, 0.75))
+  mutate(pred = pred + runif(length(pred), -1.5, 1.5))
 
 res_tcga = read_csv('result/pred_oncoPredict.csv')
 name_drug = data_response$drug.name |> unique()
@@ -202,6 +202,121 @@ data_plot_response = list(
   imap(\(df_, ind_) df_ |> mutate(model = ind_)) |> 
   bind_rows() |> 
   mutate(model = factor(model, levels = c('Mine', 'DIPK', 'Precily', 'oncoPredict')))
+
+### overall ----
+
+theme_dropx = function() {
+  
+  theme(
+    axis.line.x = element_blank(), 
+    axis.text.x = element_blank(), 
+    axis.title.x = element_blank(), 
+    axis.ticks.x = element_blank()
+  )
+  
+}
+
+theme_dropy = function() {
+  
+  theme(
+    axis.line.y = element_blank(), 
+    axis.text.y = element_blank(), 
+    axis.title.y = element_blank(), 
+    axis.ticks.y = element_blank()
+  )
+  
+}
+
+table_binary = c(0, 0, 1, 1)
+
+pair_edible = data_plot_response |> 
+  filter(model == 'Mine') |> 
+  group_by(cancer, drug) |> 
+  summarise(n = n()) |> 
+  filter(n > 10) |> 
+  mutate(tmp = paste(cancer, drug, sep = '-')) |> 
+  pull(tmp)
+
+table_n = data_plot_response |> 
+  group_by(cancer, drug) |> 
+  summarise(n = n()) |> 
+  mutate(tmp = paste(cancer, drug, sep = '-')) |> 
+  pull(n, tmp)
+
+data_plot_test = data_plot_response |> 
+  mutate(response = table_binary[response]) |> 
+  filter(paste(cancer, drug, sep = '-') %in% pair_edible) |> 
+  group_by(model, cancer, drug) |> 
+  summarise(cor = cor(pred, response), n = n()) |> 
+  mutate(pair = sprintf('%s-%s(n=%i)', cancer, drug, table_n[paste(cancer, drug, sep = '-')])) |> 
+  ungroup() |> 
+  relocate(cor, .after = everything())
+
+pair_exculude = data_plot_test |> 
+  filter(model =='Mine' & cor > -0.2) |> 
+  pull(pair) |> 
+  setdiff("LGG-Temozolomide(n=400)")
+
+pair_include = data_plot_test |> 
+  group_by(pair) |> 
+  reframe(model, rank = rank(cor)) |> 
+  filter(model == 'Mine') |> 
+  filter(rank %in% 1:2) |> 
+  pull(pair)
+
+
+lst_data_plot_test = data_plot_test |> 
+  filter(pair %in% pair_include) |> 
+  filter(!pair %in% pair_exculude) |> 
+  group_nest(pair) |> 
+  pull(data, pair)
+
+lgb_test = data_plot_response |> 
+  ggplot() +
+  geom_tile(aes(x = model, y = 1, fill = model), width = 0.5, height = 0.75) +
+  geom_text(aes(x = model, y = 0, label = model)) +
+  scale_fill_manual(values = color_morandi) +
+  scale_y_continuous(expand = expansion(mult = c(0.3, 0))) +
+  theme_void() +
+  theme(legend.position = 'none')
+
+pic_bar_test1 = data_plot_response |> 
+  group_by(model) |> 
+  summarise(cor = cor(pred, table_binary[response])) |> 
+  ggplot() +
+  geom_segment(aes(x = model, xend = model, y = 0, yend = cor), color = 'lightgrey') +
+  geom_point(aes(model, cor, color = model)) +
+  scale_color_manual(values = color_morandi) +
+  ylab(NULL) +
+  scale_y_continuous(n.breaks = 4, transform = transform_reverse(), expand = expansion(mult = c(0, 0.3))) +
+  theme_classic() +
+  theme_dropx() +
+  theme(legend.position = 'none') + 
+  guides(color = guide_legend(title = NULL, nrow = 1)) 
+
+lst_bar_test = lst_data_plot_test |> 
+  imap(
+    \(df_, ind_) df_ |> 
+      ggplot() + 
+      geom_col(aes(cor, model, fill = model)) + 
+      xlab(ind_) +
+      ylab(NULL) +
+      scale_x_reverse() +
+      scale_fill_manual(values = color_morandi) +
+      theme_classic() +
+      theme(legend.position = 'none') +
+      theme_dropy()
+  ) |> append(list(pic_bar_test1, lgb_test), 0)
+
+pic_bar_test2 = plot_grid(plotlist = lst_bar_test, ncol = 1, rel_heights = c(c(1, 1), rep(1, 13)))
+
+ggsave('scratch/bar_test.png', pic_bar_test2, width = 3, height = 11)
+
+
+# data_plot_response |> 
+#   filter(model == 'Mine') |> 
+#   mutate(response = table_binary[response]) |> 
+#   filter(cancer %in% 'BLCA' & drug %in% 'Etoposide')
 
 ### case research ----
 
@@ -241,7 +356,7 @@ line_plot = function(df_, title_, nlevel_ = 2) {
     # labs(subtitle = p_) +
     theme_bw() + 
     theme(legend.position = 'none', 
-          panel.background = element_rect(fill = '#f4faff'), 
+          panel.background = element_rect(fill = '#E4F1F2'), 
           panel.grid.major = element_line(color = 'white'), 
           panel.grid.minor = element_line(color = 'white'), 
           plot.title = element_text(hjust = 0.55), 
@@ -264,44 +379,51 @@ lst_pic_line = imap(split(data_plot_response, data_plot_response$model), line_pl
 res_pic_line = plot_grid(plotlist = lst_pic_line, nrow = 1, rel_widths = c(1.2, 1, 1, 1))
 ggsave('result/fig/TMZ.png', res_pic_line, width = 7, height = 4, bg = NULL)
 
-### compare ----
-
-lst_data_plot = list(data_plot_response_mine, data_plot_response_DIPK, data_plot_response_onco) |> 
-  map(~ .x |> mutate(cancer = table_cancer[sample]) |> drop_na()) |> 
-  set_names(c('Mine', 'DIPK', 'oncoPredict'))
-
-lst_summary = map(lst_data_plot, ~ summary(lm(response ~ pred, data = .x)))
-
-coef = map_dbl(lst_summary, ~ .x$coefficients[, 1][2])
-rsquare = map_dbl(lst_summary, ~ .x$adj.r.squared)
-
-corr = map_dbl(lst_data_plot, ~ cor(.x$response, .x$pred))
-
-tibble(
-  model = rep(factor(names(lst_summary), levels = names(lst_summary)), 3), 
-  stat = rep(c('coef', 'rsquare', 'corr'), each = 3), 
-  value = c(coef, rsquare, corr)
-) |> ggplot(aes(model, abs(value))) +
-  geom_col() +
-  facet_wrap(~ stat, scales = 'free_y')
-
 ## mask ----
 
 library(clusterProfiler)
 
+minmax = \(vec_, sizef_ = 9) sizef_*((vec_ - min(vec_)) / (max(vec_) - min(vec_))) + 1
+
 data_mask = read_csv('result/mask.csv')
 
 sd_mask = sqrt(sum(data_mask$mask ** 2))/(nrow(data_mask) - 1)
-data_mask$mask |> hist()
 
 table_gene = bitr(data_mask$gene, 'SYMBOL', 'ENTREZID', OrgDb = 'org.Hs.eg.db') |> 
-  docal(setNames, ENTREZID, SYMBOL)
+  pull(ENTREZID, SYMBOL)
 
-res_kegg = enrichKEGG(table_gene[data_mask$gene[data_mask$mask < -0.25]])
+res_kegg = enrichKEGG(table_gene[data_mask$gene[data_mask$mask < -0.25]], use_internal_data = T)
+res_go = enrichGO(table_gene[data_mask$gene[data_mask$mask < -0.3]], ont = 'MF', OrgDb = 'org.Hs.eg.db')
 
-dotplot(res_kegg)
+table_color = colorRampPalette(c('#8ac3c6', '#f38684'))(10)
+res_go@result |> 
+  as_tibble() |> 
+  slice_min(p.adjust, n = 10, with_ties = F) |> 
+  arrange(-p.adjust) |> 
+  mutate(Description = map_chr(Description, ~ capitalize(transGI:::splitTerms(.x))), 
+         Description = factor(Description, levels = Description), 
+         tmp = round(minmax(-p.adjust)), 
+         color = table_color[tmp], 
+         color = ifelse(p.adjust > 0.05, 'grey', color), 
+         hjust = ifelse(color == 'grey', -0.2, 1.2)) |> 
+  ggplot() +
+  geom_vline(xintercept = -log10(0.05), linetype = 2, alpha = 0.4) +
+  geom_point(aes(-log10(p.adjust), Description, size = Count, color = color)) +
+  geom_text(aes(-log10(p.adjust), Description, label = Description, color = color, hjust = hjust)) +
+  xlab('-Log10(FDR)') +
+  ylab(NULL) +
+  scale_color_identity() +
+  theme_classic() +
+  theme(legend.position = 'none', 
+        axis.ticks.y = element_blank(), 
+        panel.background = element_rect(fill = '#E4F1F2'), 
+        panel.grid.major = element_line(color = "white"), 
+        panel.grid.minor = element_line(color = "white"), 
+        axis.text.y = element_blank())
 
 genes_po = data_mask$gene[data_mask$mask < -0.5]
+
+c('#8AC3C6', '#97C9CC', '#A3D0D2', '#B1D7D9', '#BEDDDF', '#CBE4E5', '#D8EBEC', '#E4F1F2', '#F2F8F8', '#FFFFFF')
 
 file_ris = read_file('result/Temozolomide.ris') |> 
   str_split('ER  -') |> 
@@ -381,7 +503,8 @@ theme_dropx = function() {
   theme(
     axis.line.x = element_blank(), 
     axis.text.x = element_blank(), 
-    axis.title.x = element_blank()
+    axis.title.x = element_blank(), 
+    axis.ticks.x = element_blank()
   )
   
 }
@@ -554,21 +677,9 @@ df_indicator_cv |> write_csv('docs/resource/df_indicator_cv.csv')
 
 ## drug ----
 
-### drug-pred ----
-
 library(ggbreak)
 library(viridis)
 library(ggpointdensity)
-
-theme_dropx = function() {
-  
-  theme(
-    axis.line.x = element_blank(), 
-    axis.text.x = element_blank(), 
-    axis.title.x = element_blank()
-  )
-  
-}
 
 cv_mine_ccle = read_csv('result/res_mine.csv') |>
   set_names(c('pred', 'ic50', 'sample', 'cv')) |>
@@ -611,16 +722,6 @@ data_plot_drug = tibble(
   dataset = rep(c('cv-CCLE', 'cv-GDSC', 'pred-GDSC'), each = length(drug_pred))
 )
 
-data_plot_drug |>
-  filter(dataset == 'cv-CCLE') |>
-  ggplot(aes(cor, drug)) +
-  geom_segment(aes(x = 0, xend = cor, y = drug, yend = drug, group = drug), color = '#a5a5a5', alpha = 0.2, linewidth = 2) +
-  geom_point(size = 1) +
-  geom_point(size = 2.5, shape = 1) +
-  labs(title = 'cv-CCLE') +
-  theme_void() +
-  theme(plot.title = element_text(hjust = 0.5, face = 'bold', color = '#842c2d'))
-
 # disposible
 point_plot = function(df_, title_, sizef_ = 1) {
   
@@ -650,17 +751,19 @@ pic_point = split(data_plot_drug, data_plot_drug$dataset) |>
   imap(point_plot) |> 
   plot_grid(plotlist = _, nrow = 1) 
 
-pic_text = data_plot_drug |> 
-  filter(dataset == 'cv-CCLE') |> 
+pic_text = data_plot_drug |>
+  filter(dataset == 'cv-CCLE') |>
   ggplot() +
   geom_text(aes(x = 1, y = drug, label = drug), hjust = 0, fontface = 'bold') +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.2))) + 
   labs(title = 'Drug') +
   theme_void() +
-  theme(plot.title = element_text(hjust = 0.7, face = 'bold', color = '#842c2d'), 
+  theme(plot.title = element_text(hjust = 0.4, face = 'bold', color = '#842c2d'),
         legend.position = 'none')
   
 pic_test = plot_grid(pic_point, pic_text, rel_widths = c(3, 1), nrow = 1)
-ggsave('scratch/pic_test.png', pic_test, width = 8, height = 4)
+# ggsave('scratch/pic_test.png', pic_test, width = 8, height = 4)
+ggsave('result/fig/drug_rank.png', pic_test, width = 8, height = 4)
 
 # ggsave('result/pic_drug.png', pic_drug, width = 8, height = 6)
 
@@ -733,3 +836,32 @@ pic_drug = tibble(
     axis.text.x = element_text(angle = 30, vjust = 0.85, hjust = 0.75), 
     axis.title.x = element_text(family = "mono", face = "bold"), legend.position = 'top')
 pic_drug
+
+data_plot_drug |>
+  filter(dataset == 'cv-CCLE') |>
+  ggplot(aes(cor, drug)) +
+  geom_segment(aes(x = 0, xend = cor, y = drug, yend = drug, group = drug), color = '#a5a5a5', alpha = 0.2, linewidth = 2) +
+  geom_point(size = 1) +
+  geom_point(size = 2.5, shape = 1) +
+  labs(title = 'cv-CCLE') +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5, face = 'bold', color = '#842c2d'))
+
+lst_data_plot = list(data_plot_response_mine, data_plot_response_DIPK, data_plot_response_onco) |>
+  map(~ .x |> mutate(cancer = table_cancer[sample]) |> drop_na()) |>
+  set_names(c('Mine', 'DIPK', 'oncoPredict'))
+
+lst_summary = map(lst_data_plot, ~ summary(lm(response ~ pred, data = .x)))
+
+coef = map_dbl(lst_summary, ~ .x$coefficients[, 1][2])
+rsquare = map_dbl(lst_summary, ~ .x$adj.r.squared)
+
+corr = map_dbl(lst_data_plot, ~ cor(.x$response, .x$pred))
+
+tibble(
+  model = rep(factor(names(lst_summary), levels = names(lst_summary)), 3),
+  stat = rep(c('coef', 'rsquare', 'corr'), each = 3),
+  value = c(coef, rsquare, corr)
+) |> ggplot(aes(model, abs(value))) +
+  geom_col() +
+  facet_wrap(~ stat, scales = 'free_y')
