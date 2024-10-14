@@ -20,15 +20,13 @@ from utils.Train import *
 from models.model_Mine import net_mine, optimizer_mine
 from utils.TrainConfig import *
 
-part1 = pd.read_csv('Dataset/Train.csv', sep='\t')
-part2 = pd.read_csv('Dataset/Test.csv', sep='\t')
-tcga = pd.read_csv('Dataset/TCGA.csv', sep='\t')
-sample_all = pd.concat([part1, part2], axis=0)
+ccle = pd.read_csv('Dataset/sample/CCLE.csv')
+tcga = pd.read_csv('Dataset/sample/TCGA.csv')
 
 loss_func = nn.MSELoss()
 metrics_dict = {'MSE': PearsonCorrCoef().to(DEVICE)}
 
-dl_train_mine = DataLoader(MyDataSet(GetData(sample_all)), batch_size=batch_size, shuffle=True, collate_fn=CollateFn(True))
+dl_train_mine = DataLoader(MyDataSet(GetData(ccle)), batch_size=batch_size, shuffle=True, collate_fn=CollateFn(True))
 dl_test_mine  = DataLoader(MyDataSet(GetData(tcga)), batch_size=batch_size, shuffle=True, collate_fn=CollateFn(True))
 
 dfhistory_mine = train_model(

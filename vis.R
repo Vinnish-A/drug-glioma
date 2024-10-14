@@ -50,12 +50,35 @@ biased_map = function(lst_, fun_, luckyOnes_ = 1, reverse_ = F) {
   
 }
 
+split_recursively = function(tidy_df_, value_ = names(tidy_df_)[length(tidy_df_)]) {
+  
+  tidy_df_ = tidy_df_ |> relocate(!!value_, .after = everything())
+  
+  if (ncol(tidy_df_) == 1) return(tidy_df_[[1]][1])
+  
+  drop_ = names(tidy_df_)[[1]]
+  keep_ = names(tidy_df_)[-1]
+  
+  lst_df_ = split(tidy_df_[, keep_], tidy_df_[[drop_]])
+  
+  for (ind_ in names(lst_df_)) {
+    
+    lst_df_[[ind_]] = split_recursively(lst_df_[[ind_]])
+    
+  }
+  
+  return(lst_df_)
+  
+}
+
 color_morandi = c('#f38684', '#afafad', '#8ac3c6', '#87b8de', '#999fbf', '#a48999')
 color_macaron = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8")
 
 # vis ---------------------------------------------------------------------
 
-## predict GDSC ----
+## GDSC ----
+
+### GDSC-pic ----
 
 library(grid)
 library(ggbreak)
@@ -117,6 +140,11 @@ pic_pre_gdsc = plot_grid(plotlist = lst_pic_gdsc, nrow = 2)
 pic_pre_gdsc
 
 ggsave('result/fig/predict_GDSC.png', pic_pre_gdsc, width = 4.5, height = 4.5, bg = NULL)
+
+### GDSC-doc ----
+
+tibble(dataset = names(lst_stat_gdsc), value = unlist(lst_stat_gdsc)) |> 
+  write_csv('docs/resource/df_stat_GDSC.csv')
 
 ## response ----
 
@@ -372,6 +400,7 @@ nojitter_color = function(pic_, color_ = color_morandi) {
     scale_fill_manual(values = color_) +
     scale_color_manual(values = color_) + 
     ylab(NULL)
+
 }
 
 jitter_color_label = function(pic_, color_ = color_morandi) {
@@ -395,7 +424,7 @@ jitter_color_label = function(pic_, color_ = color_morandi) {
 
 theme_italicX = function() theme(axis.text.x = element_text(angle = 30, vjust = 0.85, hjust = 0.75))
 
-### CCLE ----
+### cv-CCLE ----
 
 cv_mine = read_csv('result/res_mine.csv') |>
   set_names(c('pred', 'ic50', 'sample', 'cv')) |>
@@ -436,7 +465,7 @@ reg_drug_ccle = cv_all |>
 
 lst_drug_ccle = rawPic(reg_drug_ccle, '.metric')
 
-### GDSC ----
+### cv-GDSC ----
 
 cv_mine_gdsc = read_csv('result/res_mine_GDSC.csv') |>
   set_names(c('pred', 'ic50', 'sample', 'cv')) |>
@@ -510,44 +539,130 @@ lst_cv_pic_meta = plot_grid(plotlist = map(names_pic, get) , nrow = 1, rel_width
 sizef = 1.3
 ggsave('result/fig/cv_meta.png', lst_cv_pic_meta, width = 14/sizef, height = 11/sizef)
 
-### edible-drug ----
+### cv-doc ---- 
+
+names_reg = expand.grid('reg', c('cv', 'cell', 'drug'), c('ccle', 'gdsc')) |> 
+  mutate(res = str_c(Var1, Var2, Var3, sep = '_')) |> 
+  pull(res)
+
+df_indicator_cv = names_reg[c(1, 4)] |> 
+  map(~ get(.x) |> mutate(dataset = .x |> str_split('_') |> _[[1]][[3]] |> toupper())) |> 
+  bind_rows() |> 
+  group_by(dataset, .metric) |> 
+  summarise(meanNsd = sprintf('%.3f±%.3f', mean(.estimate), sd(.estimate)))
+df_indicator_cv |> write_csv('docs/resource/df_indicator_cv.csv')
+
+## drug ----
+
+### drug-pred ----
 
 library(ggbreak)
 library(viridis)
 library(ggpointdensity)
 
-score_drug_ccle = cv_all |> 
+theme_dropx = function() {
+  
+  theme(
+    axis.line.x = element_blank(), 
+    axis.text.x = element_blank(), 
+    axis.title.x = element_blank()
+  )
+  
+}
+
+cv_mine_ccle = read_csv('result/res_mine.csv') |>
+  set_names(c('pred', 'ic50', 'sample', 'cv')) |>
+  separate(sample, c('cell', 'drug'), sep = '\t')
+
+cv_mine_gdsc = read_csv('result/res_mine_GDSC.csv') |>
+  set_names(c('pred', 'ic50', 'sample', 'cv')) |>
+  separate(sample, c('cell', 'drug'), sep = '\t')
+
+pred_mine_gdsc = read_csv('result/GDSC_mine.csv') |>
+  separate(sample, into = c('sample', 'drug'), sep = '\t')
+
+score_cv_ccle = cv_mine_ccle |> 
   group_by(drug) |> 
-  summarise(cor = cor(ic50, pred, method = 'spearman', use = 'pairwise.complete.obs')) |> 
+  summarise(cor = cor(ic50, pred, method = 'pearson', use = 'pairwise.complete.obs')) |> 
   pull(cor, drug)
 
-score_drug_gdsc = cv_all_gdsc |> 
+score_cv_gdsc = cv_mine_gdsc |> 
   group_by(drug) |> 
-  summarise(cor = cor(ic50, pred, method = 'spearman', use = 'pairwise.complete.obs')) |> 
+  summarise(cor = cor(ic50, pred, method = 'pearson', use = 'pairwise.complete.obs')) |> 
   pull(cor, drug)
 
-drug_ccle = names(sort(unlist(score_drug_ccle), decreasing = T)[1:40])
-drug_gdsc = names(sort(unlist(score_drug_gdsc), decreasing = T)[1:40])
+score_pred_gdsc = pred_mine_gdsc |> 
+  group_by(drug) |> 
+  summarise(cor = cor(label, pred, method = 'pearson', use = 'pairwise.complete.obs')) |> 
+  pull(cor, drug)
 
-drug_all = intersect(drug_ccle, drug_gdsc)
+drug_cv_ccle = names(sort(unlist(score_cv_ccle), decreasing = T)[1:50])
+drug_cv_gdsc = names(sort(unlist(score_cv_gdsc), decreasing = T)[1:50])
+drug_pred_gdsc = names(sort(unlist(score_pred_gdsc), decreasing = T)[1:30])
 
-pic_drug = tibble(
-  drug = factor(c(drug_all, drug_all), levels = drug_all), 
-  cor = c(score_drug_ccle[drug_all], score_drug_gdsc[drug_all]), 
-  dataset = rep(c('CCLE', 'GDSC'), each = length(drug_all))
-) |> ggplot() +
-  geom_col(aes(drug, cor, fill = dataset), position = position_dodge2(preserve = 'single')) +
-  scale_y_break(c(0.1, 0.75), space = 0.1, scales = 4) +
-  scale_fill_manual(values = c('#463480', '#51c46a')) +
-  coord_flip() +
-  ylab('Spearman Correlation') +
-  xlab(NULL) +
-  theme_classic() +
-  theme(# axis.text.y = element_text(angle = 30, vjust = 0.85, hjust = 0.75), 
-        axis.text.x = element_text(angle = 30, vjust = 0.85, hjust = 0.75), 
-        axis.title.x = element_text(family = "mono", face = "bold"), legend.position = 'top')
+drug_pred = list(drug_cv_ccle, drug_cv_gdsc, drug_pred_gdsc) |> reduce(intersect)
 
-ggsave('result/pic_drug.png', pic_drug, width = 8, height = 6)
+rank_drug = tibble(score_cv_ccle[drug_pred], score_cv_gdsc[drug_pred], score_pred_gdsc[drug_pred]) |> 
+  rowSums() |> 
+  order(decreasing = F)
+data_plot_drug = tibble(
+  drug = factor(c(drug_pred, drug_pred, drug_pred), levels = drug_pred[rank_drug]), 
+  cor = c(score_cv_ccle[drug_pred], score_cv_gdsc[drug_pred], score_pred_gdsc[drug_pred]), 
+  dataset = rep(c('cv-CCLE', 'cv-GDSC', 'pred-GDSC'), each = length(drug_pred))
+)
+
+data_plot_drug |>
+  filter(dataset == 'cv-CCLE') |>
+  ggplot(aes(cor, drug)) +
+  geom_segment(aes(x = 0, xend = cor, y = drug, yend = drug, group = drug), color = '#a5a5a5', alpha = 0.2, linewidth = 2) +
+  geom_point(size = 1) +
+  geom_point(size = 2.5, shape = 1) +
+  labs(title = 'cv-CCLE') +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5, face = 'bold', color = '#842c2d'))
+
+# disposible
+point_plot = function(df_, title_, sizef_ = 1) {
+  
+  table_shape_ = setNames(0:2, c('cv-CCLE', 'cv-GDSC', 'pred-GDSC'))
+  table_nudge_ = setNames(c(0.06, 0.06, 0.04), c('cv-CCLE', 'cv-GDSC', 'pred-GDSC'))
+  table_color_ = setNames(color_morandi[c(1, 3, 4)], c('cv-CCLE', 'cv-GDSC', 'pred-GDSC'))
+  
+  shape_ = table_shape_[[title_]]
+  nudge_ = table_nudge_[[title_]]
+  color_ = table_color_[[title_]]
+  
+  df_ |>
+    ggplot() +
+    geom_segment(aes(x = 0.5, xend = cor, y = drug, yend = drug, group = drug), color = '#a5a5a5', alpha = 0.2, linewidth = 1.5) +
+    geom_point(aes(cor, drug), color = color_, size = sizef_ * 1) +
+    geom_point(aes(cor, drug), color = color_, size = sizef_ * 2.5, shape = shape_) +
+    geom_text(aes(cor, drug, label = round(cor, 2)), nudge_x = nudge_, fontface = 'bold', color = '#a5a5a5') +
+    scale_x_continuous(expand = expansion(mult = c(0, nudge_*2))) + 
+    labs(title = title_) +
+    theme_void() +
+    theme(plot.title = element_text(hjust = 0.5, face = 'bold', color = '#842c2d'), 
+          legend.position = 'none')
+  
+}
+
+pic_point = split(data_plot_drug, data_plot_drug$dataset) |> 
+  imap(point_plot) |> 
+  plot_grid(plotlist = _, nrow = 1) 
+
+pic_text = data_plot_drug |> 
+  filter(dataset == 'cv-CCLE') |> 
+  ggplot() +
+  geom_text(aes(x = 1, y = drug, label = drug), hjust = 0, fontface = 'bold') +
+  labs(title = 'Drug') +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.7, face = 'bold', color = '#842c2d'), 
+        legend.position = 'none')
+  
+pic_test = plot_grid(pic_point, pic_text, rel_widths = c(3, 1), nrow = 1)
+ggsave('scratch/pic_test.png', pic_test, width = 8, height = 4)
+
+# ggsave('result/pic_drug.png', pic_drug, width = 8, height = 6)
 
 stat_ccle = cor.test(cv_all$ic50, cv_all$pred, method = 'spearman')
 pic_density_ccle = cv_all |> 
@@ -580,3 +695,41 @@ pic_density_gdsc = cv_all_gdsc |>
 ggsave('result/pic_density_gdsc.png', pic_density_gdsc, width = 4, height = 4)
 
 
+# trash ----
+
+jitter_color_label = function(pic_, color_ = color_morandi) {
+  # browser()
+  
+  stat_ = summary(lm(pred ~ as.numeric(response), pic_$data))
+  p_ = stat_$coefficients |> as_tibble() |> _[2, 4] |> _[[1]] |> signif(digits = 3)
+  yPos_ = quantile(pic_$data$pred, probs = 0.99)[['99%']]
+  stat_ = tibble(x = 3, y = yPos_, p = paste0('Regression Coefficients Pvalue: ', p_))
+  
+  
+  pic_ + 
+    geom_boxplot(fill = NA, outlier.shape = NA) +
+    geom_jitter() +
+    geom_text(aes(x, y, label = p), data = stat_, inherit.aes = F, family = "mono", fontface = "bold") +
+    scale_fill_manual(values = color_) +
+    scale_color_manual(values = color_) +
+    scale_x_discrete(labels = c('PD', 'SD', 'PR', 'CR'))
+  
+}
+
+
+pic_drug = tibble(
+  drug = factor(c(drug_pred, drug_pred, drug_pred), levels = drug_pred), 
+  cor = c(score_cv_ccle[drug_pred], score_cv_gdsc[drug_pred], score_pred_gdsc[drug_pred]), 
+  dataset = rep(c('cv-CCLE', 'cv-GDSC', 'pred-GDSC'), each = length(drug_pred))
+) |> ggplot() +
+  geom_col(aes(drug, cor, fill = dataset), position = position_dodge2(preserve = 'single')) +
+  scale_y_break(c(0.1, 0.75), space = 0.1, scales = 4) +
+  scale_fill_manual(values = color_morandi) +
+  coord_flip() +
+  ylab('Spearman Correlation') +
+  xlab(NULL) +
+  theme_classic() +
+  theme(# axis.text.y = element_text(angle = 30, vjust = 0.85, hjust = 0.75), 
+    axis.text.x = element_text(angle = 30, vjust = 0.85, hjust = 0.75), 
+    axis.title.x = element_text(family = "mono", face = "bold"), legend.position = 'top')
+pic_drug

@@ -21,11 +21,9 @@ from models.model_Mine import net_mine
 from models.model_DIPK import net_DIPK
 from utils.TrainConfig import *
 
-part1 = pd.read_csv('Dataset/Train.csv', sep='\t')
-part2 = pd.read_csv('Dataset/Test.csv', sep='\t')
-tcga = pd.read_csv('Dataset/TCGA.csv', sep='\t')
-gdsc = pd.read_csv('Dataset/GDSC2.csv', sep='\t')
-sample_all = pd.concat([part1, part2], axis=0)
+ccle = pd.read_csv('Dataset/sample/CCLE.csv')
+tcga = pd.read_csv('Dataset/sample/TCGA.csv')
+gdsc = pd.read_csv('Dataset/sample/GDSC2.csv')
 
 loss_func = nn.MSELoss()
 metrics_dict = {'MSE': PearsonCorrCoef().to(DEVICE)}

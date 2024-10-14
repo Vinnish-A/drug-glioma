@@ -7,6 +7,14 @@ output: word_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+<<<<<<< HEAD
+=======
+source('resource/utils.R')
+
+modelName = 'Mine'
+res_cv = read_csv('resource/df_indicator_cv.csv') |> split_recursively()
+res_GDSC = read_csv('resource/df_stat_GDSC.csv') |> split_recursively()
+>>>>>>> 6742dd6905ff8c9f0a9ba7bea25a90339b6dc3d7
 ```
 
 # Abstract
@@ -22,6 +30,7 @@ knitr::opts_chunk$set(echo = TRUE)
 1. 围绕细胞状态的表征, 许多研究关心如何通过表达谱获取独特的细胞表示. 却忽视了基因组结构与先验通路信息能够带给预测真实临床药物反应的的泛化能力; 
 2. 尚没有研究确切的展示模型学习到的药物反应预测的有效嵌入, 事后分析确定的特征基因如何引起肿瘤药物响应, 以及化合物与细胞状态的交互作用. 
 
+<<<<<<< HEAD
 为了深入个体的异质性如何引起不同的药物反应，我们进行了一项研究，提出了基于深度学习集成多组学预测药物反应的可解释框架XXX，旨在回答上述两个主要问题. 我们的框架在预测细胞系药物敏感性的基准测试, 区分真实世界中患者是否缓解的能力上优于其他模型, 并且通过注意力机制, 研究确认并验证了xxx作为TMZ的关键靶点. 本研究提出的框架具有改善临床决策的巨大潜力, 并且将有助于药物靶标的选择与确认与药物重新利用, 并最终使临床患者获益. 
 
 # Results
@@ -29,6 +38,27 @@ knitr::opts_chunk$set(echo = TRUE)
 ## XXX generates reproducible high-precision drug response predictions.
 
 
+=======
+为了深入个体的异质性如何引起不同的药物反应，我们进行了一项研究，提出了基于深度学习集成多组学预测药物反应的可解释框架`r modelName`，旨在回答上述两个主要问题. 我们的框架在预测细胞系药物敏感性的基准测试, 区分真实世界中患者是否缓解的能力上优于其他模型, 并且通过注意力机制, 研究确认并验证了xxx作为TMZ的关键靶点. 本研究提出的框架具有改善临床决策的巨大潜力, 并且将有助于药物靶标的选择与确认与药物重新利用, 并最终使临床患者获益. 
+
+# Results
+
+## `r modelName` generates reproducible high-precision drug response predictions.
+
+```markdown
+<!-- 交叉验证部分可以考虑添加数据拆分模式, 但目前的结果已较充足 -->
+```
+
+交叉验证是评估模型架构最常用的评估方法, 反应了架构从数据中学习的模式的有效性, 预测结果的一致性与可重复性. 研究收集了CCLE与GDSC的细胞系遗传学与药物动力学测量数据作为评估集合, 并关注预测的对数化的半数抑制浓度精确与否作为DRP评估的效果. 为了确保准确报告模型的预测能力，我们遵循了一种普遍采用的数据拆分方法，即对从5个折数中的每一个获得的预测进行平均, 并同其它三个先进, 广泛应用的算法进行比较. 结果显示`r modelName`取得了最低的平均均方根误差(RMSE), 并且在五折验证上的均值与标准差也较低(`r modelName` RMSE, CCLE: `r res_cv$CCLE$rmse`, GDSC: `r res_cv$GDSC$rmse`), 合并的预测值与实际值的Spearman相关系数最高(`r modelName` Spearman Coefficient, CCLE: `r res_cv$CCLE$spearman`, GDSC: `r res_cv$GDSC$spearman`), 在其它预测值的评估指标上, `r modelName`框架的表现都更好(图1A). 这一结果表明, `r modelName`框架能够取得精确且稳定的预测效果. 将堆叠的预测值分别按照细胞系与药物划分, `r modelName`框架仍表现良好(图1A), 这表明`r modelName`框架正确的学习到了细胞系与药物的分子表示. 
+
+```markdown
+<!-- 这里忘记展示在TCGA治疗数据上的测试效果了, 坏了! -->
+```
+
+为了测试模型在真实世界中的表现效果, 研究进行了对模型泛化能力的测试. 首先使用CCLE数据(转录谱由RNA-Seq定量)训练框架, 并在GDSC数据(转录谱由微阵列定量)上测试, 预测值与实际值的Pearson相关系数为`r res_GDSC$Mine`, 取得了最优的表现. 紧接着, 我们进行了一项案例研究. 预测胶质瘤患者接受Temozolomide治疗的真实反映, 图1C中显示`r modelName`取得了最佳的区分度. `r modelName`框架 中基于多组学与通路表征的增强提高了药物反应预测的预测准确性和泛化性，强调了在药物反应预测的背景下整合全面的基因组结构以获取生物效应的重要性。
+
+![](figure/1.jpg)
+>>>>>>> 6742dd6905ff8c9f0a9ba7bea25a90339b6dc3d7
 
 
 
