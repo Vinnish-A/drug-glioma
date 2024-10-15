@@ -28,7 +28,7 @@ tcga = pd.read_csv('Dataset/sample/TCGA.csv')
 gdsc = pd.read_csv('Dataset/sample/GDSC2.csv')
 
 loss_func = nn.MSELoss()
-metrics_dict = {'MSE': PearsonCorrCoef().to(DEVICE)}
+metrics_dict = {'PCC': PearsonCorrCoef().to(DEVICE)}
 
 # mine
 dl_mine_tcga = DataLoader(MyDataSet(GetData(tcga)), batch_size=batch_size, shuffle=True, collate_fn=CollateFn(True))
