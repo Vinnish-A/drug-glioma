@@ -417,6 +417,8 @@ vec2copy = function(vec_) {
   
 }
 
+### mask1 ----
+
 data_mask = read_csv('result/mask.csv')
 
 sd_mask = sqrt(sum(data_mask$mask ** 2))/(nrow(data_mask) - 1)
@@ -452,6 +454,24 @@ res_go@result |>
         axis.text.y = element_blank())
 
 genes_po = data_mask$gene[data_mask$mask < -0.5]
+
+### mask2 ----
+
+data_mask = read_csv('result/mask2.csv')
+
+drug_hazard = data_mask |> 
+  pull(delta, gene) |> 
+  sort() |> 
+  names() |> 
+  _[1:100]
+
+durg_protective = data_mask |> 
+  pull(delta, gene) |> 
+  sort(decreasing = T) |> 
+  names() |> 
+  _[1:100]
+
+### meta analysis ----
 
 c('#8AC3C6', '#97C9CC', '#A3D0D2', '#B1D7D9', '#BEDDDF', '#CBE4E5', '#D8EBEC', '#E4F1F2', '#F2F8F8', '#FFFFFF')
 
