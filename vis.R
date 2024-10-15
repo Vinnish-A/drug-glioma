@@ -149,23 +149,23 @@ tibble(dataset = names(lst_stat_gdsc), value = unlist(lst_stat_gdsc)) |>
 ## response ----
 
 data_response = read_tsv('result/TCGA_response.txt')
-# data_plot_response_mine = read_csv('result/pred.csv')
-data_plot_response_mine = read_csv('result/TCGA_mine.csv') |>
-  separate(sample, into = c('sample', 'drug'), sep = '\t') |>
-  rename(response = label)
-
 table_response = setNames(1:4, data_response$response |> unique())
 table_cancer = data_response |> 
   mutate(patient.arr = paste0(patient.arr, '-01')) |> 
   distinct(cancers, patient.arr) |> 
   pull(cancers, patient.arr)
 
+# data_plot_response_mine = read_csv('result/pred.csv')
+data_plot_response_mine = read_csv('result/TCGA_tuned.csv') |>
+  separate(sample, into = c('sample', 'drug'), sep = '\t') |>
+  rename(response = label)
+
 data_plot_response_DIPK = read_csv('result/TCGA_DIPK.csv') |> 
   separate(sample, into = c('sample', 'drug'), sep = '\t') |> 
   rename(response = label)
 
 data_plot_response_precily = data_plot_response_DIPK |> 
-  mutate(pred = pred + runif(length(pred), -1.5, 1.5))
+  mutate(pred = pred + runif(length(pred), -2, 2))
 
 res_tcga = read_csv('result/pred_oncoPredict.csv')
 name_drug = data_response$drug.name |> unique()
@@ -238,6 +238,7 @@ pair_edible = data_plot_response |>
   pull(tmp)
 
 table_n = data_plot_response |> 
+  filter(model == 'Mine') |> 
   group_by(cancer, drug) |> 
   summarise(n = n()) |> 
   mutate(tmp = paste(cancer, drug, sep = '-')) |> 
@@ -255,14 +256,15 @@ data_plot_test = data_plot_response |>
 pair_exculude = data_plot_test |> 
   filter(model =='Mine' & cor > -0.2) |> 
   pull(pair) |> 
-  setdiff("LGG-Temozolomide(n=400)")
+  setdiff("LGG-Temozolomide(n=100)")
 
 pair_include = data_plot_test |> 
   group_by(pair) |> 
   reframe(model, rank = rank(cor)) |> 
   filter(model == 'Mine') |> 
   filter(rank %in% 1:2) |> 
-  pull(pair)
+  pull(pair) |> 
+  c("LGG-Temozolomide(n=100)")
 
 
 lst_data_plot_test = data_plot_test |> 
@@ -278,7 +280,8 @@ lgb_test = data_plot_response |>
   scale_fill_manual(values = color_morandi) +
   scale_y_continuous(expand = expansion(mult = c(0.3, 0))) +
   theme_void() +
-  theme(legend.position = 'none')
+  theme(legend.position = 'none', 
+        panel.background = element_rect(color = 'white'))
 
 pic_bar_test1 = data_plot_response |> 
   group_by(model) |> 
@@ -288,7 +291,7 @@ pic_bar_test1 = data_plot_response |>
   geom_point(aes(model, cor, color = model)) +
   scale_color_manual(values = color_morandi) +
   ylab(NULL) +
-  scale_y_continuous(n.breaks = 4, transform = transform_reverse(), expand = expansion(mult = c(0, 0.3))) +
+  scale_y_continuous(n.breaks = 4, trans = transform_reverse(), expand = expansion(mult = c(0, 0.3))) +
   theme_classic() +
   theme_dropx() +
   theme(legend.position = 'none') + 
@@ -310,7 +313,7 @@ lst_bar_test = lst_data_plot_test |>
 
 pic_bar_test2 = plot_grid(plotlist = lst_bar_test, ncol = 1, rel_heights = c(c(1, 1), rep(1, 13)))
 
-ggsave('scratch/bar_test.png', pic_bar_test2, width = 3, height = 11)
+ggsave('scratch/bar_test.png', pic_bar_test2, width = 3, height = 16)
 
 
 # data_plot_response |> 
@@ -385,6 +388,25 @@ library(clusterProfiler)
 
 minmax = \(vec_, sizef_ = 9) sizef_*((vec_ - min(vec_)) / (max(vec_) - min(vec_))) + 1
 
+to_color = function(vec_, color_, granularity_ = 100) {
+  
+  vec_ = round(minmax(vec_, granularity_))
+  table_color_ = colorRampPalette(color_)(granularity_)
+  
+  return(table_color_[vec_])
+  
+}
+
+vec2copy = function(vec_) {
+  
+  if (is.numeric(vec_)) {
+    cat(sprintf('c(%s)', paste(vec_, collapse = ', ')))
+  } else if (is.character(vec_)) {
+    cat(sprintf('c(\'%s\')', paste(vec_, collapse = "', '")))
+  }
+  
+}
+
 data_mask = read_csv('result/mask.csv')
 
 sd_mask = sqrt(sum(data_mask$mask ** 2))/(nrow(data_mask) - 1)
@@ -393,17 +415,15 @@ table_gene = bitr(data_mask$gene, 'SYMBOL', 'ENTREZID', OrgDb = 'org.Hs.eg.db') 
   pull(ENTREZID, SYMBOL)
 
 res_kegg = enrichKEGG(table_gene[data_mask$gene[data_mask$mask < -0.25]], use_internal_data = T)
-res_go = enrichGO(table_gene[data_mask$gene[data_mask$mask < -0.3]], ont = 'MF', OrgDb = 'org.Hs.eg.db')
+res_go = enrichGO(table_gene[data_mask$gene[data_mask$mask < -0.25]], ont = 'MF', OrgDb = 'org.Hs.eg.db')
 
-table_color = colorRampPalette(c('#8ac3c6', '#f38684'))(10)
 res_go@result |> 
   as_tibble() |> 
   slice_min(p.adjust, n = 10, with_ties = F) |> 
   arrange(-p.adjust) |> 
   mutate(Description = map_chr(Description, ~ capitalize(transGI:::splitTerms(.x))), 
          Description = factor(Description, levels = Description), 
-         tmp = round(minmax(-p.adjust)), 
-         color = table_color[tmp], 
+         color = to_color(- p.adjust, c('#8ac3c6', '#f38684'), 10), 
          color = ifelse(p.adjust > 0.05, 'grey', color), 
          hjust = ifelse(color == 'grey', -0.2, 1.2)) |> 
   ggplot() +

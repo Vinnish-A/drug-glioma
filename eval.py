@@ -17,9 +17,11 @@ from torchmetrics.regression import PearsonCorrCoef
 from utils.Data import *
 from utils.Train import *
 
-from models.model_Mine import net_mine
-from models.model_DIPK import net_DIPK
+from models.model_Mine import net_mine, optimizer_mine
+from models.model_DIPK import net_DIPK, optimizer_DIPK
 from utils.TrainConfig import *
+
+from scipy.stats import pearsonr
 
 ccle = pd.read_csv('Dataset/sample/CCLE.csv')
 tcga = pd.read_csv('Dataset/sample/TCGA.csv')
@@ -50,3 +52,14 @@ res_DIPK_gdsc = predict_model(net_DIPK, dl_DIPK_gdsc)
 
 pd.DataFrame(dict(zip(['pred', 'label', 'sample'], res_DIPK_tcga))).to_csv('result/TCGA_DIPK.csv', index=None)
 pd.DataFrame(dict(zip(['pred', 'label', 'sample'], res_DIPK_gdsc))).to_csv('result/GDSC_DIPK.csv', index=None)
+
+# TCGA
+dl_tuned_tcga = DataLoader(MyDataSet(GetData(tcga)), batch_size=batch_size, shuffle=True, collate_fn=CollateFn(True))
+
+net_tuned = net_mine
+net_tuned.load_state_dict(torch.load('checkpoint/tcga_trained.pt'))
+res_tuned_tcga = predict_model(net_tuned, dl_tuned_tcga)
+
+pearsonr(res_tuned_tcga[1], res_tuned_tcga[0])
+
+pd.DataFrame(dict(zip(['pred', 'label', 'sample'], res_tuned_tcga))).to_csv('result/TCGA_tuned.csv', index=None)
