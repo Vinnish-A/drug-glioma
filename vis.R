@@ -50,6 +50,16 @@ biased_map = function(lst_, fun_, luckyOnes_ = 1, reverse_ = F) {
   
 }
 
+docal = function(x_, fun_, ...) {
+  
+  params_ = lapply(as.list(match.call())[-c(1:3)], \(x__) eval(x__, envir = x_))
+  # if (is.null(names(params_)) | '' %in% names(params_)) names(params_) = names(formals(fun_))
+  res_ = do.call(fun_, params_)
+  
+  return(res_)
+  
+}
+
 split_recursively = function(tidy_df_, value_ = names(tidy_df_)[length(tidy_df_)]) {
   
   tidy_df_ = tidy_df_ |> relocate(!!value_, .after = everything())
@@ -256,7 +266,7 @@ data_plot_test = data_plot_response |>
 pair_exculude = data_plot_test |> 
   filter(model =='Mine' & cor > -0.2) |> 
   pull(pair) |> 
-  setdiff("LGG-Temozolomide(n=100)")
+  setdiff("LGG-Temozolomide(n=103)")
 
 pair_include = data_plot_test |> 
   group_by(pair) |> 
@@ -264,7 +274,7 @@ pair_include = data_plot_test |>
   filter(model == 'Mine') |> 
   filter(rank %in% 1:2) |> 
   pull(pair) |> 
-  c("LGG-Temozolomide(n=100)")
+  c("LGG-Temozolomide(n=103)")
 
 
 lst_data_plot_test = data_plot_test |> 
@@ -327,7 +337,7 @@ library(grid)
 
 sample_glioma = data_response |> 
   mutate(sample = paste0(patient.arr, '-01')) |> 
-  filter(cancers %in% c('GBM', 'LGG')) |> 
+  filter(cancers %in% 'LGG') |> 
   pull(sample)
 
 # Disposable
