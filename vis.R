@@ -396,7 +396,9 @@ ggsave('result/fig/TMZ.png', res_pic_line, width = 7, height = 4, bg = NULL)
 
 library(clusterProfiler)
 
-minmax = \(vec_, sizef_ = 9) sizef_*((vec_ - min(vec_)) / (max(vec_) - min(vec_))) + 1
+minmax = function(vec_, sizef_ = 9) {
+  sizef_*((vec_ - min(vec_)) / (max(vec_) - min(vec_))) + 1
+}
 
 to_color = function(vec_, color_, granularity_ = 100) {
   
@@ -415,6 +417,10 @@ vec2copy = function(vec_) {
     cat(sprintf('c(\'%s\')', paste(vec_, collapse = "', '")))
   }
   
+}
+
+evalParse = function(texts_) {
+  unlist(lapply(texts_, \(text__) eval(parse(text = text__))))
 }
 
 ### mask1 ----
@@ -457,19 +463,45 @@ genes_po = data_mask$gene[data_mask$mask < -0.5]
 
 ### mask2 ----
 
-data_mask = read_csv('result/mask2.csv')
+table_mask = read_csv('result/mask2.csv') |> pull(delta, gene)
+table_gene = bitr(data_mask$gene, 'SYMBOL', 'ENTREZID', OrgDb = 'org.Hs.eg.db') |> 
+  pull(ENTREZID, SYMBOL)
 
-drug_hazard = data_mask |> 
-  pull(delta, gene) |> 
-  sort() |> 
+genes_mask_pos = table_mask |> 
+  sort(decreasing = F) |> 
   names() |> 
-  _[1:100]
+  _[1:200]
 
-durg_protective = data_mask |> 
-  pull(delta, gene) |> 
+genes_mask_neg = table_mask |> 
   sort(decreasing = T) |> 
   names() |> 
-  _[1:100]
+  _[1:200]
+
+# disposible
+enrichGOByOne = function(ENTREZID_) {
+  
+  onts_ = c('BP', 'CC', 'MF')
+  lst_res_ = list()
+  for (ont_ in onts_) {
+    lst_res_[[ont_]] = enrichGO(ENTREZID_, ont = ont_, OrgDb = 'org.Hs.eg.db')@result |> 
+      mutate(ont = ont_)
+  }
+  
+  return(as_tibble(bind_rows(lst_res_)))
+  
+}
+
+# enrich_mask_kegg = enrichKEGG(table_gene[genes_mask], use_internal_data = T)
+enrich_mask_go_pos = enrichGOByOne(table_gene[genes_mask_pos])
+enrich_mask_go_neg = enrichGOByOne(table_gene[genes_mask_neg])
+
+enrich_mask_go_pos |> 
+  group_by(ont) |> 
+  slice_min(pvalue, n = 7, with_ties = F) |> 
+  mutate(GeneRatio = evalParse(GeneRatio), 
+         padj = p.adjust(pvalue*10, 'bonferroni')) |> 
+  select(Description, GeneRatio, padj, Count, ont) |> 
+  View()
 
 ### meta analysis ----
 
@@ -849,6 +881,9 @@ ggsave('result/pic_density_gdsc.png', pic_density_gdsc, width = 4, height = 4)
 
 
 # trash ----
+
+ccle = read_csv('Dataset/sample/CCLE.csv')
+gdsc = read_csv('Dataset/sample/GDSC.csv')
 
 jitter_color_label = function(pic_, color_ = color_morandi) {
   # browser()

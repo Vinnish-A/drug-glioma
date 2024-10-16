@@ -34,7 +34,7 @@ RNA_dict_TCGA = joblib.load('Dataset/RNAseq_Dict_TCGA.pkl')
 RNA_dict_keep = {key: value for key, value in RNA_dict_TCGA.items() if key in toKeep}
 genes = pd.read_csv('Dataset/symbols.txt', header=None).loc[:, 0].to_list()
 
-# mine
+# Temozolomide
 dl_base = DataLoader(MyDataSet(GetData(glioma.loc[glioma.Cell.isin(toKeep)])), batch_size=batch_size, shuffle=True,collate_fn=CollateFn(True))
 net_mine.load_state_dict(torch.load('checkpoint/tcga_trained.pt'))
 result_base = predict_model(net_mine, dl_base)
