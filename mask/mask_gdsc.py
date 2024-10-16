@@ -24,12 +24,11 @@ from scipy.stats import pearsonr
 drug = 'Temozolomide'
 
 gdsc = pd.read_csv('Dataset/sample/GDSC2.csv')
-gdsc_Irinotecan = gdsc.loc[gdsc.Drug.isin([drug])]
+gdsc_sliced = gdsc.loc[gdsc.Drug.isin([drug])]
 
-toKeep = set(gdsc_Irinotecan.Cell.to_list())
+toKeep = set(gdsc_sliced.Cell.to_list())
 RNA_dict_keep = {key: value for key, value in RNA_dict.items() if key in toKeep}
 
-# mine
 net_mine.load_state_dict(torch.load('checkpoint/tcga_trained.pt'))
 genes = pd.read_csv('Dataset/symbols.txt', header=None).loc[:, 0].to_list()
 
@@ -37,7 +36,7 @@ def mask(ind):
     RNA_dict_TCGA2 = deepcopy(RNA_dict_keep)
     for key in RNA_dict_TCGA2.keys():
         RNA_dict_TCGA2[key][ind] = 0
-    dl_mine_tcga = DataLoader(MyDataSet(GetData(gdsc_Irinotecan, RNA_dict=RNA_dict_TCGA2)), batch_size=batch_size, shuffle=True, collate_fn=CollateFn(True))
+    dl_mine_tcga = DataLoader(MyDataSet(GetData(gdsc_sliced, RNA_dict=RNA_dict_TCGA2)), batch_size=batch_size, shuffle=True, collate_fn=CollateFn(True))
     res_mine_tcga = predict_model(net_mine, dl_mine_tcga)
     return(res_mine_tcga)
 

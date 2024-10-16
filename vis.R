@@ -117,7 +117,7 @@ lst_data_pre_gdsc = setNames(
 
 lst_stat_gdsc = map(lst_data_pre_gdsc, ~ cor(.x$response, .x$pred))
 
-# disposible
+# disposable
 density_plot = function(df_, name_, stat_) {
   
   df_ |> 
@@ -423,6 +423,20 @@ evalParse = function(texts_) {
   unlist(lapply(texts_, \(text__) eval(parse(text = text__))))
 }
 
+# unstable
+enrichGOByOne = function(ENTREZID_) {
+  
+  onts_ = c('BP', 'CC', 'MF')
+  lst_res_ = list()
+  for (ont_ in onts_) {
+    lst_res_[[ont_]] = enrichGO(ENTREZID_, ont = ont_, OrgDb = 'org.Hs.eg.db')@result |> 
+      mutate(ont = ont_)
+  }
+  
+  return(as_tibble(bind_rows(lst_res_)))
+  
+}
+
 ### mask1 ----
 
 data_mask = read_csv('result/mask.csv')
@@ -461,39 +475,25 @@ res_go@result |>
 
 genes_po = data_mask$gene[data_mask$mask < -0.5]
 
-### mask2 ----
+### mask-tcga ----
 
-table_mask = read_csv('result/mask2.csv') |> pull(delta, gene)
-table_gene = bitr(data_mask$gene, 'SYMBOL', 'ENTREZID', OrgDb = 'org.Hs.eg.db') |> 
+table_mask_tcga = read_csv('result/mask2.csv') |> pull(delta, gene)
+table_gene_tcga = bitr(names(table_mask_tcga), 'SYMBOL', 'ENTREZID', OrgDb = 'org.Hs.eg.db') |> 
   pull(ENTREZID, SYMBOL)
 
-genes_mask_pos = table_mask |> 
+genes_mask_pos = table_mask_tcga |> 
   sort(decreasing = F) |> 
   names() |> 
   _[1:200]
 
-genes_mask_neg = table_mask |> 
+genes_mask_neg = table_mask_tcga |> 
   sort(decreasing = T) |> 
   names() |> 
   _[1:200]
 
-# disposible
-enrichGOByOne = function(ENTREZID_) {
-  
-  onts_ = c('BP', 'CC', 'MF')
-  lst_res_ = list()
-  for (ont_ in onts_) {
-    lst_res_[[ont_]] = enrichGO(ENTREZID_, ont = ont_, OrgDb = 'org.Hs.eg.db')@result |> 
-      mutate(ont = ont_)
-  }
-  
-  return(as_tibble(bind_rows(lst_res_)))
-  
-}
-
 # enrich_mask_kegg = enrichKEGG(table_gene[genes_mask], use_internal_data = T)
-enrich_mask_go_pos = enrichGOByOne(table_gene[genes_mask_pos])
-enrich_mask_go_neg = enrichGOByOne(table_gene[genes_mask_neg])
+enrich_mask_tcga_pos = enrichGOByOne(table_gene_tcga[genes_mask_pos])
+enrich_mask_tcga_neg = enrichGOByOne(table_gene_tcga[genes_mask_neg])
 
 enrich_mask_go_pos |> 
   group_by(ont) |> 
@@ -501,6 +501,40 @@ enrich_mask_go_pos |>
   mutate(GeneRatio = evalParse(GeneRatio), 
          padj = p.adjust(pvalue*10, 'bonferroni')) |> 
   select(Description, GeneRatio, padj, Count, ont) |> 
+  View()
+
+### mask-gdsc ----
+
+table_mask_gdsc = read_csv('result/mask_GDSC_LGG_Temozolomide.csv') |> pull(delta, gene)
+table_gene_gdsc = bitr(names(table_mask_gdsc), 'SYMBOL', 'ENTREZID', OrgDb = 'org.Hs.eg.db') |> 
+  pull(ENTREZID, SYMBOL)
+
+genes_mask_pos = table_mask_gdsc |> 
+  sort(decreasing = T) |> 
+  names() |> 
+  _[1:200]
+
+genes_mask_neg = table_mask_gdsc |> 
+  sort(decreasing = F) |> 
+  names() |> 
+  _[1:200]
+
+# enrich_mask_kegg = enrichKEGG(table_gene[genes_mask], use_internal_data = T)
+enrich_mask_gdsc_pos = enrichGOByOne(table_gene_gdsc[genes_mask_pos])
+enrich_mask_gdsc_neg = enrichGOByOne(table_gene_gdsc[genes_mask_neg])
+
+enrich_mask_gdsc_pos |> 
+  group_by(ont) |> 
+  slice_min(pvalue, n = 20, with_ties = F) |> 
+  mutate(GeneRatio = evalParse(GeneRatio)) |> 
+  select(Description, GeneRatio, qvalue, Count, ont) |> 
+  View()
+
+enrich_mask_gdsc_neg |> 
+  group_by(ont) |> 
+  slice_min(pvalue, n = 20, with_ties = F) |> 
+  mutate(GeneRatio = evalParse(GeneRatio)) |> 
+  select(Description, GeneRatio, qvalue, Count, ont) |> 
   View()
 
 ### meta analysis ----
@@ -713,7 +747,7 @@ lst_drug_gdsc = rawPic(reg_drug_gdsc, '.metric')
 
 ### cv-summary ----
 
-# disposible
+# disposable
 mergePics = function(lst_, fun_) {
   
   lst_$pics |> 
@@ -804,7 +838,7 @@ data_plot_drug = tibble(
   dataset = rep(c('cv-CCLE', 'cv-GDSC', 'pred-GDSC'), each = length(drug_pred))
 )
 
-# disposible
+# disposable
 point_plot = function(df_, title_, sizef_ = 1) {
   
   table_shape_ = setNames(0:2, c('cv-CCLE', 'cv-GDSC', 'pred-GDSC'))
