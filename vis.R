@@ -1,5 +1,5 @@
 
-# config ------------------------------------------------------------------
+# vis ---------------------------------------------------------------------
 
 
 library(tidyverse)
@@ -81,14 +81,10 @@ split_recursively = function(tidy_df_, value_ = names(tidy_df_)[length(tidy_df_)
   
 }
 
-color_morandi = c('#f38684', '#afafad', '#8ac3c6', '#87b8de', '#999fbf', '#a48999')
+color_morandi = c('#8ac3c6', '#999fbf', '#afafad', '#87b8de', '#f38684', '#a48999')
 color_macaron = c("#E45D61", "#4A9D47", "#F19294", "#96C3D8")
 
-# vis ---------------------------------------------------------------------
-
 ## GDSC ----
-
-### GDSC-pic ----
 
 library(grid)
 library(ggbreak)
@@ -117,6 +113,8 @@ lst_data_pre_gdsc = setNames(
 
 lst_stat_gdsc = map(lst_data_pre_gdsc, ~ cor(.x$response, .x$pred))
 
+### GDSC-pic ----
+
 # disposable
 density_plot = function(df_, name_, stat_) {
   
@@ -124,12 +122,11 @@ density_plot = function(df_, name_, stat_) {
     slice_sample(n = 20000) |> 
     ggplot(aes(response, pred)) +
     geom_pointdensity(alpha = 0.8) +
-    scale_color_gradientn(colours = c('#f1f3de', '#7cd1c0', '#2e3086')) + 
+    scale_color_gradientn(colours = c('#f1f3de', '#8ac3c6', '#999fbf')) + 
     xlab(NULL) +
     ylab(NULL) +
     theme_bw() +
-    theme(legend.position = 'none', 
-          panel.background = element_rect(fill = '#E4F1F2')) +
+    theme(legend.position = 'none') +
     annotation_custom(
       grob = textGrob(
         sprintf('%s-PCC: %.3f', name_, stat_), 
@@ -147,9 +144,10 @@ lst_pic_gdsc = pmap(
 )
 
 pic_pre_gdsc = plot_grid(plotlist = lst_pic_gdsc, nrow = 2)
-pic_pre_gdsc
+# pic_pre_gdsc
 
-ggsave('result/fig/predict_GDSC.png', pic_pre_gdsc, width = 4.5, height = 4.5, bg = NULL)
+sizef = 1.1
+ggsave('result/fig/predict_GDSC.png', pic_pre_gdsc, width = 4.5/sizef, height = 4.5/sizef, bg = NULL)
 
 ### GDSC-doc ----
 
@@ -254,7 +252,7 @@ table_n = data_plot_response |>
   mutate(tmp = paste(cancer, drug, sep = '-')) |> 
   pull(n, tmp)
 
-data_plot_test = data_plot_response |> 
+data_plot_overall = data_plot_response |> 
   mutate(response = table_binary[response]) |> 
   filter(paste(cancer, drug, sep = '-') %in% pair_edible) |> 
   group_by(model, cancer, drug) |> 
@@ -263,12 +261,12 @@ data_plot_test = data_plot_response |>
   ungroup() |> 
   relocate(cor, .after = everything())
 
-pair_exculude = data_plot_test |> 
+pair_exculude = data_plot_overall |> 
   filter(model =='Mine' & cor > -0.2) |> 
   pull(pair) |> 
   setdiff("LGG-Temozolomide(n=103)")
 
-pair_include = data_plot_test |> 
+pair_include = data_plot_overall |> 
   group_by(pair) |> 
   reframe(model, rank = rank(cor)) |> 
   filter(model == 'Mine') |> 
@@ -277,13 +275,7 @@ pair_include = data_plot_test |>
   c("LGG-Temozolomide(n=103)")
 
 
-lst_data_plot_test = data_plot_test |> 
-  filter(pair %in% pair_include) |> 
-  filter(!pair %in% pair_exculude) |> 
-  group_nest(pair) |> 
-  pull(data, pair)
-
-lgb_test = data_plot_response |> 
+lgb_overall = data_plot_response |> 
   ggplot() +
   geom_tile(aes(x = model, y = 1, fill = model), width = 0.5, height = 0.75) +
   geom_text(aes(x = model, y = 0, label = model)) +
@@ -293,7 +285,7 @@ lgb_test = data_plot_response |>
   theme(legend.position = 'none', 
         panel.background = element_rect(color = 'white'))
 
-pic_bar_test1 = data_plot_response |> 
+pic_bar_overall = data_plot_response |> 
   group_by(model) |> 
   summarise(cor = cor(pred, table_binary[response])) |> 
   ggplot() +
@@ -307,7 +299,13 @@ pic_bar_test1 = data_plot_response |>
   theme(legend.position = 'none') + 
   guides(color = guide_legend(title = NULL, nrow = 1)) 
 
-lst_bar_test = lst_data_plot_test |> 
+lst_data_plot_overall = data_plot_overall |> 
+  filter(pair %in% pair_include) |> 
+  filter(!pair %in% pair_exculude) |> 
+  group_nest(pair) |> 
+  pull(data, pair)
+
+lst_bar_overall = lst_data_plot_overall |> 
   imap(
     \(df_, ind_) df_ |> 
       ggplot() + 
@@ -319,11 +317,11 @@ lst_bar_test = lst_data_plot_test |>
       theme_classic() +
       theme(legend.position = 'none') +
       theme_dropy()
-  ) |> append(list(pic_bar_test1, lgb_test), 0)
+  ) |> append(list(pic_bar_overall, lgb_overall), 0)
 
-pic_bar_test2 = plot_grid(plotlist = lst_bar_test, ncol = 1, rel_heights = c(c(1, 1), rep(1, 13)))
+pic_overall = plot_grid(plotlist = lst_bar_overall, ncol = 1, rel_heights = c(c(1, 1), rep(1, 13)))
 
-ggsave('scratch/bar_test.png', pic_bar_test2, width = 3, height = 16)
+ggsave('result/fig/response_overall.png', pic_overall, width = 3, height = 18)
 
 
 # data_plot_response |> 
@@ -369,7 +367,7 @@ line_plot = function(df_, title_, nlevel_ = 2) {
     # labs(subtitle = p_) +
     theme_bw() + 
     theme(legend.position = 'none', 
-          panel.background = element_rect(fill = '#E4F1F2'), 
+          # panel.background = element_rect(fill = '#E4F1F2'), 
           panel.grid.major = element_line(color = 'white'), 
           panel.grid.minor = element_line(color = 'white'), 
           plot.title = element_text(hjust = 0.55), 
@@ -565,31 +563,37 @@ source('utils/metrics_reg.R')
 
 metrics_reg = metric_set(mse, rmse, mae, huber_loss, ccc, rsq, rpd, spearman)
 
+scale_range_break = function(vec_, rangeN_ = 4:6, accuracy_ = 2) {
+  
+  sizef_ = 10^accuracy_
+  range_ = range(vec_)
+  range_ = c(floor(range_[1]*sizef_)/sizef_, ceiling(range_[2]*sizef_)/sizef_)
+  
+  intervals_ = signif((range_[2]-range_[1])/seq(min(rangeN_)-1, max(rangeN_)+1), accuracy_)
+  for (interval_ in intervals_) {
+    
+    break_ = seq(range_[1], range_[2], interval_) |> 
+      round(digits = accuracy_) |> 
+      unique()
+    
+    if (length(break_) %in% 4:6) break
+    
+  }
+  
+  return(list(ranges = range_, breaks = break_))
+  
+}
+
 ploter = function(data_, x_ = 'model', y_ = '.estimate', ylab_ = '.metric') {
   
   x_ = sym(x_)
   y_ = sym(y_)
   ylab_ = sym(ylab_)
   
-  
-  range_ = range(data_[[as_name(y_)]])
-  range_ = c(floor(range_[1]*10)/10, ceiling(range_[2]*10)/10)
-  
-  intervals_ = c(0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1)
-  for (interval_ in intervals_) {
-    
-    break_ = seq(range_[1], range_[2], interval_) |> round(digits = 2) |> unique()
-    
-    if (length(break_) %in% 4:6) break
-    
-  }
-  
   ylab_ = data_[[as_name(ylab_)]] |> unique() |> str_replace_all('_', ' ') |> toupper()
   # if (ylab_ == 'ccc') browser()
   data_ |> 
     ggplot(aes(!!x_, !!y_, color = !!x_)) +
-    # geom_jitter() + 
-    scale_y_continuous(breaks = break_, limits = range_, labels = number_format(accuracy = 0.01)) +
     ylab(ylab_) + 
     xlab(NULL) + 
     theme_bw() +
@@ -622,42 +626,6 @@ theme_dropx = function() {
     axis.title.x = element_blank(), 
     axis.ticks.x = element_blank()
   )
-  
-}
-
-jitter_color = function(pic_, color_ = color_morandi) {
-  pic_ + 
-    geom_boxplot(fill = NA, outlier.shape = NA) +
-    geom_jitter() +
-    scale_fill_manual(values = color_) +
-    scale_color_manual(values = color_)
-}
-
-nojitter_color = function(pic_, color_ = color_morandi) {
-  pic_ + 
-    geom_boxplot(fill = NA, outlier.shape = NA) +
-    scale_fill_manual(values = color_) +
-    scale_color_manual(values = color_) + 
-    ylab(NULL)
-
-}
-
-jitter_color_label = function(pic_, color_ = color_morandi) {
-  # browser()
-  
-  stat_ = summary(lm(pred ~ as.numeric(response), pic_$data))
-  p_ = stat_$coefficients |> as_tibble() |> _[2, 4] |> _[[1]] |> signif(digits = 3)
-  yPos_ = quantile(pic_$data$pred, probs = 0.99)[['99%']]
-  stat_ = tibble(x = 3, y = yPos_, p = paste0('Regression Coefficients Pvalue: ', p_))
-  
-  
-  pic_ + 
-    geom_boxplot(fill = NA, outlier.shape = NA) +
-    geom_jitter() +
-    geom_text(aes(x, y, label = p), data = stat_, inherit.aes = F, family = "mono", fontface = "bold") +
-    scale_fill_manual(values = color_) +
-    scale_color_manual(values = color_) +
-    scale_x_discrete(labels = c('PD', 'SD', 'PR', 'CR'))
   
 }
 
@@ -748,6 +716,35 @@ lst_drug_gdsc = rawPic(reg_drug_gdsc, '.metric')
 ### cv-summary ----
 
 # disposable
+jitter_color = function(pic_, color_ = color_morandi) {
+  
+  y_ = pic_$data[[pic_$mapping$y |> as_name()]]
+  range_break_ = scale_range_break(y_)
+  
+  pic_ + 
+    geom_boxplot(fill = NA, outlier.shape = NA) +
+    geom_jitter() +
+    scale_fill_manual(values = color_) +
+    scale_color_manual(values = color_) + 
+    scale_y_continuous(breaks = range_break_$breaks, limits = range_break_$ranges, labels = number_format(accuracy = 0.01))
+}
+
+# disposable
+nojitter_color = function(pic_, color_ = color_morandi) {
+  
+  y_ = pic_$data[[pic_$mapping$y |> as_name()]]
+  range_break_ = scale_range_break(y_)
+  
+  pic_ + 
+    geom_boxplot(fill = NA, outlier.shape = NA) +
+    scale_fill_manual(values = color_) +
+    scale_color_manual(values = color_) + 
+    ylab(NULL) + 
+    scale_y_continuous(breaks = range_break_$breaks, limits = range_break_$ranges, labels = number_format(accuracy = 0.01))
+  
+}
+
+# disposable
 mergePics = function(lst_, fun_) {
   
   lst_$pics |> 
@@ -773,10 +770,10 @@ names_pic = expand.grid('pic', c('cv', 'cell', 'drug'), c('ccle', 'gdsc')) |>
   mutate(res = str_c(Var1, Var2, Var3, sep = '_')) |> 
   pull(res)
 
-rel_width = 1.2
+rel_width = 1.15
 lst_cv_pic_meta = plot_grid(plotlist = map(names_pic, get) , nrow = 1, rel_widths = c(rel_width, 1, 1, rel_width, 1, 1))
 sizef = 1.3
-ggsave('result/fig/cv_meta.png', lst_cv_pic_meta, width = 14/sizef, height = 11/sizef)
+ggsave('result/fig/cv_meta.png', lst_cv_pic_meta, width = 17/sizef, height = 11/sizef)
 
 ### cv-doc ---- 
 
