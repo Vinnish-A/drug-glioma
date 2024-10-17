@@ -393,6 +393,7 @@ ggsave('result/fig/TMZ.png', res_pic_line, width = 7, height = 4, bg = NULL)
 ## mask ----
 
 library(clusterProfiler)
+library(enrichplot)
 
 minmax = function(vec_, sizef_ = 9) {
   sizef_*((vec_ - min(vec_)) / (max(vec_) - min(vec_))) + 1
@@ -422,122 +423,151 @@ evalParse = function(texts_) {
 }
 
 # unstable
-enrichGOByOne = function(ENTREZID_) {
+enrichGOByOne = function(symbols_) {
   
   onts_ = c('BP', 'CC', 'MF')
+  lst_raw_ = list()
   lst_res_ = list()
   for (ont_ in onts_) {
-    lst_res_[[ont_]] = enrichGO(ENTREZID_, ont = ont_, OrgDb = 'org.Hs.eg.db')@result |> 
-      mutate(ont = ont_)
+    lst_res_[[ont_]] = enrichGO(symbols_, ont = ont_, OrgDb = 'org.Hs.eg.db', keyType = 'SYMBOL')
+    lst_res_[[ont_]] = lst_res_[[ont_]]@result |> mutate(ont = ont_)
   }
   
-  return(as_tibble(bind_rows(lst_res_)))
+  return(list(raw = lst_raw_, res = as_tibble(bind_rows(lst_res_))))
   
 }
 
-### mask1 ----
+# unstable
+# useless
+separate_des = function(df_, toFactor_, toKeep_, ...) {
+  
+  # browser()
+  toKeep_ = enexpr(toKeep_)
+  toKeep_ = expr_name(toKeep_)
+  
+  df_new_ = df_ |> 
+    ungroup() |> 
+    arrange(...) |> 
+    mutate('{{toFactor_}}' := factor({{toFactor_}}, levels = {{toFactor_}}), 
+           order_first = row_number(), 
+           order_second = 2)
+  
+  df_NA_ = df_ |> 
+    ungroup() |> 
+    arrange(...) |> 
+    mutate(across(!all_of(toKeep_), ~ NA), 
+           order_first = row_number(), 
+           order_second = 1)
+  
+  # browser()
+  bind_rows(df_new_, df_NA_) |> 
+    arrange(order_first, order_second) |> 
+    select(-c(order_first, order_second))
+  
+}
 
-data_mask = read_csv('result/mask.csv')
+# disposable
+filter_symbols = function(symbols_, table_, n_ = 16) {
+  # browser()
+  vec_symbol = str_split(symbols_, '/')[[1]]
+  vec_symbol = abs(table_)[vec_symbol] |> 
+    sort(decreasing = T) |> 
+    names()
+  
+  if (length(vec_symbol) > n_) vec_symbol = vec_symbol[1:n_]
+  
+  return(paste(vec_symbol, collapse = ' '))
+  
+}
 
-sd_mask = sqrt(sum(data_mask$mask ** 2))/(nrow(data_mask) - 1)
-
-table_gene = bitr(data_mask$gene, 'SYMBOL', 'ENTREZID', OrgDb = 'org.Hs.eg.db') |> 
-  pull(ENTREZID, SYMBOL)
-
-res_kegg = enrichKEGG(table_gene[data_mask$gene[data_mask$mask < -0.25]], use_internal_data = T)
-res_go = enrichGO(table_gene[data_mask$gene[data_mask$mask < -0.25]], ont = 'MF', OrgDb = 'org.Hs.eg.db')
-
-res_go@result |> 
-  as_tibble() |> 
-  slice_min(p.adjust, n = 10, with_ties = F) |> 
-  arrange(-p.adjust) |> 
-  mutate(Description = map_chr(Description, ~ capitalize(transGI:::splitTerms(.x))), 
-         Description = factor(Description, levels = Description), 
-         color = to_color(- p.adjust, c('#8ac3c6', '#f38684'), 10), 
-         color = ifelse(p.adjust > 0.05, 'grey', color), 
-         hjust = ifelse(color == 'grey', -0.2, 1.2)) |> 
-  ggplot() +
-  geom_vline(xintercept = -log10(0.05), linetype = 2, alpha = 0.4) +
-  geom_point(aes(-log10(p.adjust), Description, size = Count, color = color)) +
-  geom_text(aes(-log10(p.adjust), Description, label = Description, color = color, hjust = hjust)) +
-  xlab('-Log10(FDR)') +
-  ylab(NULL) +
-  scale_color_identity() +
-  theme_classic() +
-  theme(legend.position = 'none', 
-        axis.ticks.y = element_blank(), 
-        panel.background = element_rect(fill = '#E4F1F2'), 
-        panel.grid.major = element_line(color = "white"), 
-        panel.grid.minor = element_line(color = "white"), 
-        axis.text.y = element_blank())
-
-genes_po = data_mask$gene[data_mask$mask < -0.5]
+# disposable
+bar_plot = function(df_, sizef_ = 1) {
+  
+  df_ |> 
+    ggplot() +
+    geom_col(aes(-log10(qvalue), y, color = ont, fill = ont), width = 1.4) +
+    geom_vline(xintercept = -log10(0.05), linetype = 2, alpha = 0.4) +
+    geom_text(aes(0, y, label = capitalize(Description)), hjust = 0, nudge_x = 0.1, size = 4 * sizef_) +
+    geom_text(aes(0, ifelse(is.na(Description), y, NA), label = geneID), color = 'grey', hjust = 0, nudge_x = 0.1, size = 2*sizef_, show.legend = F) +
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_fill_manual(values = color_morandi) +
+    scale_color_manual(values = color_morandi) + 
+    xlab('-Log10(FDR)') +
+    ylab(NULL) +
+    theme_classic() +
+    theme(legend.position = 'none', 
+          axis.ticks.y = element_blank(), 
+          panel.grid.major = element_line(color = "#fafafa"), 
+          panel.grid.minor = element_line(color = "#fafafa"), 
+          axis.text.y = element_blank(), 
+          axis.line.y = element_blank())
+  
+}
 
 ### mask-tcga ----
 
-table_mask_tcga = read_csv('result/mask2.csv') |> pull(delta, gene)
-table_gene_tcga = bitr(names(table_mask_tcga), 'SYMBOL', 'ENTREZID', OrgDb = 'org.Hs.eg.db') |> 
-  pull(ENTREZID, SYMBOL)
+table_mask_tcga = read_csv('result/mask_TCGA_LGG_Temozolomide.csv') |> pull(delta, gene)
 
-genes_mask_pos = table_mask_tcga |> 
-  sort(decreasing = F) |> 
-  names() |> 
-  _[1:200]
-
-genes_mask_neg = table_mask_tcga |> 
+genes_mask_tcga = table_mask_tcga |> 
+  abs() |> 
   sort(decreasing = T) |> 
   names() |> 
-  _[1:200]
+  _[1:400]
 
-# enrich_mask_kegg = enrichKEGG(table_gene[genes_mask], use_internal_data = T)
-enrich_mask_tcga_pos = enrichGOByOne(table_gene_tcga[genes_mask_pos])
-enrich_mask_tcga_neg = enrichGOByOne(table_gene_tcga[genes_mask_neg])
+# enrich_mask_tcga_both = enrichGOByOne(genes_mask_tcga)
+# saveRDS(enrich_mask_tcga_both, 'result/enrich_mask_tcga_both.Rds')
+enrich_mask_tcga_both = readRDS('result/enrich_mask_tcga_both.Rds')
 
-enrich_mask_go_pos |> 
+terms_exculude = c('muscle organ development', 'gliogenesis')
+
+dp_mask_tcga = enrich_mask_tcga_both$res |> 
+  filter(!Description %in% terms_exculude) |> 
   group_by(ont) |> 
-  slice_min(pvalue, n = 7, with_ties = F) |> 
-  mutate(GeneRatio = evalParse(GeneRatio), 
-         padj = p.adjust(pvalue*10, 'bonferroni')) |> 
-  select(Description, GeneRatio, padj, Count, ont) |> 
-  View()
+  slice_min(qvalue, n = 4, with_ties = F) |> 
+  separate_des(Description, geneID, desc(ont), -qvalue) |> 
+  mutate(y = factor(row_number()), 
+         geneID = map_chr(geneID, filter_symbols, table_ = table_mask_tcga)) 
+
+pic_mask_tcga = bar_plot(dp_mask_tcga)
+ggsave('result/fig/enrich_mask_tcga.png', pic_mask_tcga, width = 6, height = 4.5)
 
 ### mask-gdsc ----
 
 table_mask_gdsc = read_csv('result/mask_GDSC_LGG_Temozolomide.csv') |> pull(delta, gene)
-table_gene_gdsc = bitr(names(table_mask_gdsc), 'SYMBOL', 'ENTREZID', OrgDb = 'org.Hs.eg.db') |> 
-  pull(ENTREZID, SYMBOL)
 
-genes_mask_pos = table_mask_gdsc |> 
+genes_mask_gdsc = table_mask_gdsc |> 
+  abs() |> 
   sort(decreasing = T) |> 
   names() |> 
-  _[1:200]
+  _[1:400]
 
-genes_mask_neg = table_mask_gdsc |> 
-  sort(decreasing = F) |> 
-  names() |> 
-  _[1:200]
+# enrich_mask_gdsc_both = enrichGOByOne(genes_mask_gdsc)
+# saveRDS(enrich_mask_tcga_both, 'result/enrich_mask_tcga_both.Rds')
+enrich_mask_tcga_both = readRDS('result/enrich_mask_tcga_both.Rds')
 
-# enrich_mask_kegg = enrichKEGG(table_gene[genes_mask], use_internal_data = T)
-enrich_mask_gdsc_pos = enrichGOByOne(table_gene_gdsc[genes_mask_pos])
-enrich_mask_gdsc_neg = enrichGOByOne(table_gene_gdsc[genes_mask_neg])
+terms_include = c('extracellular matrix organization', 'extracellular structure organization', 'muscle cell migration', 'synapse organization')
 
-enrich_mask_gdsc_pos |> 
+
+enrich_mask_gdsc_both$res |> 
+  filter(Description %in% terms_include | ont != 'BP') |> 
   group_by(ont) |> 
-  slice_min(pvalue, n = 20, with_ties = F) |> 
-  mutate(GeneRatio = evalParse(GeneRatio)) |> 
-  select(Description, GeneRatio, qvalue, Count, ont) |> 
+  slice_min(qvalue, n = 4, with_ties = F) |> 
+  arrange(desc(ont), qvalue) |> 
   View()
 
-enrich_mask_gdsc_neg |> 
+dp_mask_gdsc = enrich_mask_gdsc_both$res |> 
+  filter(Description %in% terms_include | ont != 'BP') |> 
   group_by(ont) |> 
-  slice_min(pvalue, n = 20, with_ties = F) |> 
-  mutate(GeneRatio = evalParse(GeneRatio)) |> 
-  select(Description, GeneRatio, qvalue, Count, ont) |> 
-  View()
+  slice_min(qvalue, n = 4, with_ties = F) |> 
+  separate_des(Description, geneID, desc(ont), -qvalue) |> 
+  mutate(y = factor(row_number()), 
+         geneID = map_chr(geneID, filter_symbols, table_ = table_mask_gdsc)) 
+
+pic_mask_gdsc = bar_plot(dp_mask_gdsc)
+ggsave('result/fig/enrich_mask_gdsc.png', pic_mask_gdsc, width = 6, height = 4.5)
+
 
 ### meta analysis ----
-
-c('#8AC3C6', '#97C9CC', '#A3D0D2', '#B1D7D9', '#BEDDDF', '#CBE4E5', '#D8EBEC', '#E4F1F2', '#F2F8F8', '#FFFFFF')
 
 file_ris = read_file('result/Temozolomide.ris') |> 
   str_split('ER  -') |> 
@@ -981,3 +1011,41 @@ tibble(
 ) |> ggplot(aes(model, abs(value))) +
   geom_col() +
   facet_wrap(~ stat, scales = 'free_y')
+
+### mask1 ----
+
+data_mask = read_csv('result/mask.csv')
+
+sd_mask = sqrt(sum(data_mask$mask ** 2))/(nrow(data_mask) - 1)
+
+table_gene = bitr(data_mask$gene, 'SYMBOL', 'ENTREZID', OrgDb = 'org.Hs.eg.db') |> 
+  pull(ENTREZID, SYMBOL)
+
+res_kegg = enrichKEGG(table_gene[data_mask$gene[data_mask$mask < -0.25]], use_internal_data = T)
+res_go = enrichGO(table_gene[data_mask$gene[data_mask$mask < -0.25]], ont = 'MF', OrgDb = 'org.Hs.eg.db')
+
+res_go@result |> 
+  as_tibble() |> 
+  slice_min(p.adjust, n = 10, with_ties = F) |> 
+  arrange(-p.adjust) |> 
+  mutate(Description = map_chr(Description, ~ capitalize(transGI:::splitTerms(.x))), 
+         Description = factor(Description, levels = Description), 
+         color = to_color(- p.adjust, c('#8ac3c6', '#f38684'), 10), 
+         color = ifelse(p.adjust > 0.05, 'grey', color), 
+         hjust = ifelse(color == 'grey', -0.2, 1.2)) |> 
+  ggplot() +
+  geom_vline(xintercept = -log10(0.05), linetype = 2, alpha = 0.4) +
+  geom_point(aes(-log10(p.adjust), Description, size = Count, color = color)) +
+  geom_text(aes(-log10(p.adjust), Description, label = Description, color = color, hjust = hjust)) +
+  xlab('-Log10(FDR)') +
+  ylab(NULL) +
+  scale_color_identity() +
+  theme_classic() +
+  theme(legend.position = 'none', 
+        axis.ticks.y = element_blank(), 
+        panel.background = element_rect(fill = '#E4F1F2'), 
+        panel.grid.major = element_line(color = "white"), 
+        panel.grid.minor = element_line(color = "white"), 
+        axis.text.y = element_blank())
+
+genes_po = data_mask$gene[data_mask$mask < -0.5]
