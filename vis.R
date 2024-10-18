@@ -649,6 +649,70 @@ pic_mask_gdsc = bar_plot(dp_mask_gdsc)
 gsea_gdsc = readRDS('result/gsea_gdsc.Rds')
 gsea_gdsc@result |> View()
 
+### mask-direction ----
+
+dp_pred_tcga = read_csv('result/TCGA_tuned.csv') |> select(-label)
+dp_pred_gdsc = read_csv('result/GDSC_mine.csv') |> select(-label)
+table_response = factor(c('PD', 'SD', 'PR', 'CR'), levels = c('PD', 'SD', 'PR', 'CR'))
+pathways = c('EMT', 'UPR', 'HEDGEHOG', 'TGF-Beta')
+
+lst_pic_dc_tcga = map(
+  pathways, 
+  \(chr_) {
+    dp_ = read_csv(sprintf('result/direction_tcga_LGG_Temozolomide_%s.csv', chr_)) |> 
+      rename(disturbed = pred) |> distinct(sample, .keep_all = T)
+    dp_ = inner_join(dp_, dp_pred_tcga, 'sample') |> 
+      pivot_longer(-c(sample, label), names_to = 'group', values_to = 'value') |> 
+      mutate(label = table_response[label])
+    # browser()
+    stat_ = t.test(value~group, data = dp_)
+    
+    dp_ |> 
+      ggplot() +
+      geom_line(aes(group, value, group = sample), color = 'gray', lwd = 0.5, alpha = 0.5) +
+      geom_point(aes(group, value, fill = label), shape = 21) + 
+      scale_fill_manual(values = color_morandi) + 
+      scale_x_discrete(labels = c('Disturbed', 'Untreated')) +
+      xlab(NULL) +
+      ylab(NULL) +
+      labs(title = chr_, subtitle = sprintf('ANOVA: %.3f', stat_$p.value)) + 
+      guides(fill = guide_legend(title = NULL)) + 
+      theme_classic() + 
+      theme(plot.title = element_text(hjust = 0.5, size = 12), 
+            plot.subtitle = element_text(hjust = 1, size = 8), 
+            legend.position = c(0.9, 0.45), 
+            legend.background = element_blank())
+  }
+)
+
+lst_pic_dc_gdsc = map(
+  pathways, 
+  \(chr_) {
+    dp_ = read_csv(sprintf('result/direction_gdsc_LGG_Temozolomide_%s.csv', chr_)) |> 
+      rename(disturbed = pred) |> distinct(sample, .keep_all = T)
+    dp_ = inner_join(dp_, dp_pred_gdsc, 'sample') |> 
+      pivot_longer(-c(sample, label), names_to = 'group', values_to = 'value')
+    stat_ = t.test(value~group, data = dp_)
+    
+    dp_ |> 
+      ggplot() +
+      geom_line(aes(group, value, group = sample), color = 'gray', lwd = 0.5, alpha = 0.5) +
+      geom_point(aes(group, value, fill = label, color = label), shape = 21) + 
+      scale_color_gradientn(colors = c("#394c81", "#94697a")) + 
+      scale_fill_gradientn(colors = c("#394c81", "#94697a")) + 
+      scale_x_discrete(labels = c('Disturbed', 'Untreated')) +
+      scale_y_continuous(labels = number_format(accuracy = 0.1)) +
+      xlab(NULL) +
+      ylab(NULL) +
+      labs(title = chr_, subtitle = sprintf('ANOVA: %.3f', stat_$p.value)) + 
+      guides(fill = 'none', color = 'none') + 
+      theme_classic() + 
+      theme(plot.title = element_text(hjust = 0.5, size = 12), 
+            plot.subtitle = element_text(hjust = 1, size = 8), 
+            legend.position = c(0.9, 0.35), 
+            legend.background = element_blank())
+  }
+)
 
 ### mask-summary ----
 
@@ -657,18 +721,24 @@ terms_inculude = c('HALLMARK_EPITHELIAL_MESENCHYMAL_TRANSITION', 'HALLMARK_UNFOL
 # tcga
 lst_pic_gsea_tcga = appendWithName(map(terms_inculude, gsea_plot, gsea_ = gsea_tcga, sizef = 6), tie = tie_plot(5863))
 pic_gsea_tcga = plot_grid(plotlist = lst_pic_gsea_tcga, ncol = 1, rel_heights = c(rep(4, length(terms_inculude)), 1))
+pic_dc_tcga = plot_grid(plotlist = lst_pic_dc_tcga, ncol = 2)
 
 sizef = 1.1
 ggsave('result/fig/gsea_mask_tcga.png', pic_gsea_tcga, width = 3*sizef, height = 4*sizef)
 ggsave('result/fig/enrich_mask_tcga.png', pic_mask_tcga, width = 6, height = 4.5)
+sizef = 1.3
+ggsave('result/fig/dc_mask_tcga.png', pic_dc_tcga, width = 6/sizef, height = 5/sizef)
 
 # gdsc
 lst_pic_gsea_gdsc = appendWithName(map(terms_inculude, gsea_plot, gsea_ = gsea_gdsc, sizef = 6), tie = tie_plot(5863))
 pic_gsea_gdsc = plot_grid(plotlist = lst_pic_gsea_gdsc, ncol = 1, rel_heights = c(rep(4, length(terms_inculude)), 1))
+pic_dc_gdsc = plot_grid(plotlist = lst_pic_dc_gdsc, ncol = 2)
 
 sizef = 1.1
 ggsave('result/fig/gsea_mask_gdsc.png', pic_gsea_gdsc, width = 3*sizef, height = 4*sizef)
 ggsave('result/fig/enrich_mask_gdsc.png', pic_mask_gdsc, width = 6, height = 4.5)
+sizef = 1.3
+ggsave('result/fig/dc_mask_gdsc.png', pic_dc_gdsc, width = 6/sizef, height = 5/sizef)
 
 ### mask-doc ----
 
@@ -683,7 +753,6 @@ enrich_mask_gdsc_both$res |>
   slice_min(qvalue, n = 10, with_ties = F) |> 
   drop_na() |> 
   write_csv('docs/resource/enrich_mask_gdsc.csv')
-
 
 ### meta analysis ----
 
