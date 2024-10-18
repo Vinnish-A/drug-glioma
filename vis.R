@@ -522,9 +522,9 @@ gsea_plot = function(gsea_, term_, sizef_ = 2) {
     geom_segment(aes(xend = x, y = 0, yend = -runningScore, color = x), linewidth = 0.1 * sizef_, data = subset(gsdata_, position == 1)) + 
     theme_void() + 
     scale_x_continuous(expand = c(0, 0)) + 
-    scale_y_continuous(expand = c(0, 0), breaks = NULL) +
-    scale_color_gradient(low = "#394c81", high = "#94697a") +
-    xlab(term_) + 
+    scale_y_continuous(expand = c(0, 0.1), breaks = NULL) +
+    scale_color_gradient(low = "#94697a", high = "#394c81") +
+    xlab(str_sub(term_, 10)) + 
     ylab(NULL) + 
     theme(
       legend.position = "none", 
@@ -543,20 +543,29 @@ gsea_plot = function(gsea_, term_, sizef_ = 2) {
       )  
     )
   
-  # p2_ = gsdata_ |> 
-  #   ggplot(aes(x, y = 1, fill = x)) +
-  #   geom_tile() + 
-  #   theme_void() +
-  #   scale_fill_gradient(low = "#394c81", high = "#94697a") +
-  #   aplot::xlim2(p1_) +
-  #   theme(
-  #     legend.position = "none"
-  #   )
-  # 
-  # p1_ |> 
-  #   aplot::insert_bottom(p2_, height = 0.05)
-  
   p1_
+  
+}
+
+# disposable
+tie_plot = function(length_) {
+  
+  
+  dp_ = tibble(x = 1:length_, y = 1)
+  
+  p2_ = dp_ |>
+    ggplot(aes(x, y = 1, fill = x)) +
+    geom_tile() +
+    theme_void() +
+    xlab(NULL) +
+    ylab(NULL) +
+    scale_fill_gradientn(colours = c('white', '#AE8E9B', "#94697a", "#394c81", '#6A78A0', 'white')) +
+    theme(
+      legend.position = "none", 
+      plot.margin = margin(t = 10, r = 0, b = 0, l = 0)
+    )
+
+  p2_
   
 }
 
@@ -588,10 +597,10 @@ dp_mask_tcga = enrich_mask_tcga_both$res |>
 
 pic_mask_tcga = bar_plot(dp_mask_tcga)
 
-gsea_tcga = GSEA(sort(abs(table_mask_tcga), decreasing = T), TERM2GENE = hallmark, verbose = F, pvalueCutoff = 0.99)
+# gsea_tcga = GSEA(sort(abs(table_mask_tcga), decreasing = T), TERM2GENE = hallmark, verbose = F, pvalueCutoff = 0.99)
+# saveRDS(gsea_tcga, 'result/gsea_tcga.Rds')
+gsea_tcga = readRDS('result/gsea_tcga.Rds')
 gsea_tcga@result$ID
-
-gsea_plot(gsea_tcga, 'HALLMARK_COAGULATION', 4)
 
 ### mask-gdsc ----
 
@@ -604,18 +613,11 @@ genes_mask_gdsc = table_mask_gdsc |>
   _[1:400]
 
 # enrich_mask_gdsc_both = enrichGOByOne(genes_mask_gdsc)
-# saveRDS(enrich_mask_tcga_both, 'result/enrich_mask_tcga_both.Rds')
-enrich_mask_tcga_both = readRDS('result/enrich_mask_tcga_both.Rds')
+# saveRDS(enrich_mask_gdsc_both, 'result/enrich_mask_gdsc_both.Rds')
+enrich_mask_gdsc_both = readRDS('result/enrich_mask_gdsc_both.Rds')
 
 terms_include = c('extracellular matrix organization', 'extracellular structure organization', 'muscle cell migration', 'synapse organization')
 
-
-enrich_mask_gdsc_both$res |> 
-  filter(Description %in% terms_include | ont != 'BP') |> 
-  group_by(ont) |> 
-  slice_min(qvalue, n = 4, with_ties = F) |> 
-  arrange(desc(ont), qvalue) |> 
-  View()
 
 dp_mask_gdsc = enrich_mask_gdsc_both$res |> 
   filter(Description %in% terms_include | ont != 'BP') |> 
@@ -627,12 +629,30 @@ dp_mask_gdsc = enrich_mask_gdsc_both$res |>
 
 pic_mask_gdsc = bar_plot(dp_mask_gdsc)
 
+# gsea_gdsc = GSEA(sort(abs(table_mask_gdsc), decreasing = T), TERM2GENE = hallmark, verbose = F, pvalueCutoff = 0.99)
+# saveRDS(gsea_gdsc, 'result/gsea_gdsc.Rds')
+gsea_gdsc = readRDS('result/gsea_gdsc.Rds')
+gsea_gdsc@result |> View()
+
+
 ### mask-summary ----
 
+terms_inculude = c('HALLMARK_EPITHELIAL_MESENCHYMAL_TRANSITION', 'HALLMARK_UNFOLDED_PROTEIN_RESPONSE', 'HALLMARK_HEDGEHOG_SIGNALING', 'HALLMARK_TGF_BETA_SIGNALING')
+
 # tcga
+lst_pic_gsea_tcga = appendWithName(map(terms_inculude, gsea_plot, gsea_ = gsea_tcga, sizef = 6), tie = tie_plot(5863))
+pic_gsea_tcga = plot_grid(plotlist = lst_pic_gsea_tcga, ncol = 1, rel_heights = c(rep(4, length(terms_inculude)), 1))
+
+sizef = 1.1
+ggsave('result/fig/gsea_mask_tcga.png', pic_gsea_tcga, width = 3*sizef, height = 4*sizef)
 ggsave('result/fig/enrich_mask_tcga.png', pic_mask_tcga, width = 6, height = 4.5)
 
 # gdsc
+lst_pic_gsea_gdsc = appendWithName(map(terms_inculude, gsea_plot, gsea_ = gsea_gdsc, sizef = 6), tie = tie_plot(5863))
+pic_gsea_gdsc = plot_grid(plotlist = lst_pic_gsea_gdsc, ncol = 1, rel_heights = c(rep(4, length(terms_inculude)), 1))
+
+sizef = 1.1
+ggsave('result/fig/gsea_mask_gdsc.png', pic_gsea_gdsc, width = 3*sizef, height = 4*sizef)
 ggsave('result/fig/enrich_mask_gdsc.png', pic_mask_gdsc, width = 6, height = 4.5)
 
 
@@ -1139,3 +1159,27 @@ imap(
 aaa = readLines('Dataset/reference/hallmark_hsa.gmt')
 
 kegg = read.gmt('Dataset/reference/KEGG_hsa.gmt')
+
+# arrow_left_ = segmentsGrob(
+#   x0 = unit(0.1, "npc"), y0 = unit(0, "npc"),
+#   x1 = unit(0.3, "npc"), y1 = unit(0, "npc"),
+#   gp = gpar(col = "black", lwd = 2),
+#   arrow = arrow(type = "open", length = unit(0.1, "inches"), ends = 'first')
+# )
+# 
+# arrow_right_ = segmentsGrob(
+#   x0 = unit(0.7, "npc"), y0 = unit(0, "npc"),
+#   x1 = unit(0.9, "npc"), y1 = unit(0, "npc"),
+#   gp = gpar(col = "black", lwd = 2),
+#   arrow = arrow(type = "open", length = unit(0.1, "inches"))
+# )
+# 
+# text_left_ = textGrob(
+#   "Disturbance", x = unit(0.3, "npc"), y = unit(0.05, "npc"),
+#   gp = gpar(col = "black", fontsize = 12)
+# )
+# 
+# text_right_ = textGrob(
+#   "Stability", x = unit(0.7, "npc"), y = unit(0.05, "npc"),
+#   gp = gpar(col = "black", fontsize = 12)
+# )
