@@ -390,6 +390,21 @@ lst_pic_line = imap(split(data_plot_response, data_plot_response$model), line_pl
 res_pic_line = plot_grid(plotlist = lst_pic_line, nrow = 1, rel_widths = c(1.2, 1, 1, 1))
 ggsave('result/fig/TMZ.png', res_pic_line, width = 7, height = 4, bg = NULL)
 
+### response-doc ----
+
+data_plot_response |> 
+  group_by(model) |> 
+  summarise(cor = cor(pred, table_binary[response])) |>
+  mutate(cor = signif(cor, digits = 3)) |> 
+  write_csv('docs/resource/response_overall.csv')
+
+data_plot_overall |> 
+  filter(pair %in% pair_include) |> 
+  filter(!pair %in% pair_exculude) |> 
+  select(pair, model, cor) |> 
+  mutate(cor = signif(cor, digits = 3)) |> 
+  write_csv('docs/resource/response_each.csv')
+
 ## mask ----
 
 library(clusterProfiler)
@@ -654,6 +669,20 @@ pic_gsea_gdsc = plot_grid(plotlist = lst_pic_gsea_gdsc, ncol = 1, rel_heights = 
 sizef = 1.1
 ggsave('result/fig/gsea_mask_gdsc.png', pic_gsea_gdsc, width = 3*sizef, height = 4*sizef)
 ggsave('result/fig/enrich_mask_gdsc.png', pic_mask_gdsc, width = 6, height = 4.5)
+
+### mask-doc ----
+
+enrich_mask_tcga_both$res |> 
+  group_by(ont) |> 
+  slice_min(qvalue, n = 10, with_ties = F) |> 
+  drop_na() |> 
+  write_csv('docs/resource/enrich_mask_tcga.csv')
+
+enrich_mask_gdsc_both$res |> 
+  group_by(ont) |> 
+  slice_min(qvalue, n = 10, with_ties = F) |> 
+  drop_na() |> 
+  write_csv('docs/resource/enrich_mask_gdsc.csv')
 
 
 ### meta analysis ----
