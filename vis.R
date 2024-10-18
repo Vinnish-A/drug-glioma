@@ -394,6 +394,8 @@ ggsave('result/fig/TMZ.png', res_pic_line, width = 7, height = 4, bg = NULL)
 
 library(clusterProfiler)
 library(enrichplot)
+library(grid)
+library(aplot)
 
 minmax = function(vec_, sizef_ = 9) {
   sizef_*((vec_ - min(vec_)) / (max(vec_) - min(vec_))) + 1
@@ -504,6 +506,62 @@ bar_plot = function(df_, sizef_ = 1) {
   
 }
 
+# disposable
+gsea_plot = function(gsea_, term_, sizef_ = 2) {
+  
+  geneSetID_ = which(gsea_@result$ID == term_)
+  
+  ES_ = gsea_@result$enrichmentScore[geneSetID_]
+  FDR_ = gsea_@result$pvalue[geneSetID_]
+  tag_ = sprintf("ES=%.3f, False Discovery Rate=%.3f", ES_, FDR_)
+  
+  gsdata_ = enrichplot:::gsInfo(gsea_, geneSetID_) |> as_tibble() 
+  
+  p1_ = gsdata_ |> 
+    ggplot(aes(x = x)) + 
+    geom_segment(aes(xend = x, y = 0, yend = -runningScore, color = x), linewidth = 0.1 * sizef_, data = subset(gsdata_, position == 1)) + 
+    theme_void() + 
+    scale_x_continuous(expand = c(0, 0)) + 
+    scale_y_continuous(expand = c(0, 0), breaks = NULL) +
+    scale_color_gradient(low = "#394c81", high = "#94697a") +
+    xlab(term_) + 
+    ylab(NULL) + 
+    theme(
+      legend.position = "none", 
+      plot.margin = margin(t = -0.1, b = 0, unit = "cm"), 
+      axis.title.x = element_text(), 
+      axis.ticks = element_blank(), 
+      axis.text = element_blank(), 
+      axis.line.x = element_blank()
+    ) +
+    annotation_custom(
+      grob = textGrob(
+        tag_, 
+        x = unit(1, "npc"), y = unit(0.05, "npc"),  
+        hjust = 1, vjust = 0, 
+        gp = gpar(col = "black", fontsize = 10, family = "italic", fontface = "italic")
+      )  
+    )
+  
+  # p2_ = gsdata_ |> 
+  #   ggplot(aes(x, y = 1, fill = x)) +
+  #   geom_tile() + 
+  #   theme_void() +
+  #   scale_fill_gradient(low = "#394c81", high = "#94697a") +
+  #   aplot::xlim2(p1_) +
+  #   theme(
+  #     legend.position = "none"
+  #   )
+  # 
+  # p1_ |> 
+  #   aplot::insert_bottom(p2_, height = 0.05)
+  
+  p1_
+  
+}
+
+hallmark = read.gmt('Dataset/reference/hallmark_hsa.gmt')
+
 ### mask-tcga ----
 
 table_mask_tcga = read_csv('result/mask_TCGA_LGG_Temozolomide.csv') |> pull(delta, gene)
@@ -529,7 +587,11 @@ dp_mask_tcga = enrich_mask_tcga_both$res |>
          geneID = map_chr(geneID, filter_symbols, table_ = table_mask_tcga)) 
 
 pic_mask_tcga = bar_plot(dp_mask_tcga)
-ggsave('result/fig/enrich_mask_tcga.png', pic_mask_tcga, width = 6, height = 4.5)
+
+gsea_tcga = GSEA(sort(abs(table_mask_tcga), decreasing = T), TERM2GENE = hallmark, verbose = F, pvalueCutoff = 0.99)
+gsea_tcga@result$ID
+
+gsea_plot(gsea_tcga, 'HALLMARK_COAGULATION', 4)
 
 ### mask-gdsc ----
 
@@ -564,6 +626,13 @@ dp_mask_gdsc = enrich_mask_gdsc_both$res |>
          geneID = map_chr(geneID, filter_symbols, table_ = table_mask_gdsc)) 
 
 pic_mask_gdsc = bar_plot(dp_mask_gdsc)
+
+### mask-summary ----
+
+# tcga
+ggsave('result/fig/enrich_mask_tcga.png', pic_mask_tcga, width = 6, height = 4.5)
+
+# gdsc
 ggsave('result/fig/enrich_mask_gdsc.png', pic_mask_gdsc, width = 6, height = 4.5)
 
 
@@ -1049,3 +1118,24 @@ res_go@result |>
         axis.text.y = element_blank())
 
 genes_po = data_mask$gene[data_mask$mask < -0.5]
+
+kegg = clusterProfiler:::get_data_from_KEGG_db('hsa')
+ids = unique(unlist(kegg$PATHID2EXTID))
+table_kegg = bitr(ids, 'ENTREZID', 'SYMBOL', OrgDb = 'org.Hs.eg.db') |> 
+  pull(SYMBOL, ENTREZID)
+
+noNA = \(vec_) vec_[!is.na(vec_)]
+
+path2symbol = lapply(kegg$PATHID2EXTID, \(ids_) noNA(table_kegg[ids_]))
+names(kegg$PATHID2NAME) = paste0('hsa', names(kegg$PATHID2NAME))
+imap(
+  path2symbol, 
+  \(symbol_, pathway_) {
+    paste0(c(kegg$PATHID2NAME[[pathway_]], 'local', symbol_), collapse = '\t')
+  }
+) |> unlist() |> writeLines('Dataset/reference/KEGG_hsa.gmt')
+
+
+aaa = readLines('Dataset/reference/hallmark_hsa.gmt')
+
+kegg = read.gmt('Dataset/reference/KEGG_hsa.gmt')
