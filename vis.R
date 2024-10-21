@@ -1029,6 +1029,8 @@ df_indicator_cv |> write_csv('docs/resource/df_indicator_cv.csv')
 
 ## drug ----
 
+### edible ----
+
 library(ggbreak)
 library(viridis)
 library(ggpointdensity)
@@ -1108,19 +1110,45 @@ pic_drug_text = data_plot_drug |>
   mutate(drug = case_when(drug == 'Podophyllotoxin bromide' ~ 'Podophyllotoxin', T ~ drug), 
          drug = factor(drug, levels = rev(drug))) |> 
   ggplot() +
-  geom_text(aes(x = 1, y = drug, label = drug), nudge_x = 0.5, hjust = 0, fontface = 'bold') +
+  geom_text(aes(x = 1, y = drug, label = drug), nudge_x = 0.5, hjust = 0) +
   scale_x_continuous(expand = expansion(mult = c(0.02, 0.2))) + 
   labs(title = 'Drug') +
   theme_void() +
   theme(
-    plot.title = element_text(hjust = 0.4, face = 'bold', color = '#394c81'),
+    plot.title = element_text(hjust = 0.35, face = 'bold', color = '#394c81'),
     legend.position = 'none'
   )
   
 pic_drug = plot_grid(pic_drug_point, pic_drug_text, rel_widths = c(3, 1), nrow = 1)
 ggsave('result/fig/drug_rank.png', pic_drug, width = 8, height = 4)
 
-# ggsave('result/pic_drug.png', pic_drug, width = 8, height = 6)
+### attention ----
+
+toName = list.files('result/') |> 
+  str_subset('att') |> 
+  str_sub(5, -5)
+lst_attScore = list.files('result/', full.names = T) |> 
+  str_subset('att') |> 
+  map(read_csv) |> 
+  set_names(toName)
+
+
+
+lst_attScore |> 
+  map(\(x_) tibble(weight = signif(max(x_[['value']]), 3))) |> 
+  map(
+    \(x_) {
+      ggplot(x_) +
+        geom_point(aes(x = 1, y = 1), color = '#94697a', size = 5) +
+        geom_text(aes(x = 1, y = 1), label = sprintf('Attention Weights: %.3f', x_[[1]][1]), hjust = -0.1) +
+        scale_x_continuous(expand = expansion(mult = c(0.02, 0.25))) + 
+        scale_y_continuous(expand = expansion(mult = c(0, 0))) +
+        theme_void()
+    }
+  ) |> iwalk(
+    \(pic_, ind_) ggsave(sprintf('result/fig/lgd_%s.png', ind_), pic_, width = 2, height = 1)
+  )
+
 
 ## sreen ----
 
