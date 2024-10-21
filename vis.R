@@ -586,6 +586,7 @@ tie_plot = function(length_) {
 
 hallmark = read.gmt('Dataset/reference/hallmark_hsa.gmt')
 
+
 ### mask-tcga ----
 
 table_mask_tcga = read_csv('result/mask_TCGA_LGG_Temozolomide.csv') |> pull(delta, gene)
@@ -739,6 +740,27 @@ ggsave('result/fig/gsea_mask_gdsc.png', pic_gsea_gdsc, width = 3*sizef, height =
 ggsave('result/fig/enrich_mask_gdsc.png', pic_mask_gdsc, width = 6, height = 4.5)
 sizef = 1.3
 ggsave('result/fig/dc_mask_gdsc.png', pic_dc_gdsc, width = 6/sizef, height = 5/sizef)
+
+# lgd
+lgd_enrich = ggdraw(
+  get_plot_component(
+    tibble(ont = c('BP', 'CC', 'MF'), value = rep(1, 3)) |> 
+      ggplot() + 
+      geom_tile(aes(ont, value, fill = ont)) +
+      scale_fill_manual(values = color_morandi) +
+      guides(fill = guide_legend(title = NULL, )) + 
+      theme_bw() +
+      theme(
+        legend.title = element_blank(), 
+        legend.position = 'bottom', 
+        legend.background = element_rect(fill = NA)
+      ), 
+    'guide-box', return_all = T
+  )[[3]]
+)  
+
+ggsave('result/fig/lgd_enrich.png', lgd_enrich, width = 2, height = 1, bg = NA)
+
 
 ### mask-doc ----
 
@@ -1041,7 +1063,7 @@ drug_cv_ccle = names(sort(unlist(score_cv_ccle), decreasing = T)[1:50])
 drug_cv_gdsc = names(sort(unlist(score_cv_gdsc), decreasing = T)[1:50])
 drug_pred_gdsc = names(sort(unlist(score_pred_gdsc), decreasing = T)[1:30])
 
-drug_pred = list(drug_cv_ccle, drug_cv_gdsc, drug_pred_gdsc) |> reduce(intersect)
+drug_pred = list(drug_cv_ccle, drug_cv_gdsc, drug_pred_gdsc) |> reduce(intersect) |> c('Temozolomide')
 
 rank_drug = tibble(score_cv_ccle[drug_pred], score_cv_gdsc[drug_pred], score_pred_gdsc[drug_pred]) |> 
   rowSums() |> 
@@ -1057,7 +1079,7 @@ point_plot = function(df_, title_, sizef_ = 1) {
   
   table_shape_ = setNames(0:2, c('cv-CCLE', 'cv-GDSC', 'pred-GDSC'))
   table_nudge_ = setNames(c(0.06, 0.06, 0.04), c('cv-CCLE', 'cv-GDSC', 'pred-GDSC'))
-  table_color_ = setNames(color_morandi[c(1, 3, 4)], c('cv-CCLE', 'cv-GDSC', 'pred-GDSC'))
+  table_color_ = setNames(color_morandi, c('cv-CCLE', 'cv-GDSC', 'pred-GDSC'))
   
   shape_ = table_shape_[[title_]]
   nudge_ = table_nudge_[[title_]]
@@ -1072,63 +1094,217 @@ point_plot = function(df_, title_, sizef_ = 1) {
     scale_x_continuous(expand = expansion(mult = c(0, nudge_*2))) + 
     labs(title = title_) +
     theme_void() +
-    theme(plot.title = element_text(hjust = 0.5, face = 'bold', color = '#842c2d'), 
+    theme(plot.title = element_text(hjust = 0.5, face = 'bold', color = '#394c81'), 
           legend.position = 'none')
   
 }
 
-pic_point = split(data_plot_drug, data_plot_drug$dataset) |> 
+pic_drug_point = split(data_plot_drug, data_plot_drug$dataset) |> 
   imap(point_plot) |> 
   plot_grid(plotlist = _, nrow = 1) 
 
-pic_text = data_plot_drug |>
+pic_drug_text = data_plot_drug |>
   filter(dataset == 'cv-CCLE') |>
+  mutate(drug = case_when(drug == 'Podophyllotoxin bromide' ~ 'Podophyllotoxin', T ~ drug), 
+         drug = factor(drug, levels = rev(drug))) |> 
   ggplot() +
-  geom_text(aes(x = 1, y = drug, label = drug), hjust = 0, fontface = 'bold') +
-  scale_x_continuous(expand = expansion(mult = c(0, 0.2))) + 
+  geom_text(aes(x = 1, y = drug, label = drug), nudge_x = 0.5, hjust = 0, fontface = 'bold') +
+  scale_x_continuous(expand = expansion(mult = c(0.02, 0.2))) + 
   labs(title = 'Drug') +
   theme_void() +
-  theme(plot.title = element_text(hjust = 0.4, face = 'bold', color = '#842c2d'),
-        legend.position = 'none')
+  theme(
+    plot.title = element_text(hjust = 0.4, face = 'bold', color = '#394c81'),
+    legend.position = 'none'
+  )
   
-pic_test = plot_grid(pic_point, pic_text, rel_widths = c(3, 1), nrow = 1)
-# ggsave('scratch/pic_test.png', pic_test, width = 8, height = 4)
-ggsave('result/fig/drug_rank.png', pic_test, width = 8, height = 4)
+pic_drug = plot_grid(pic_drug_point, pic_drug_text, rel_widths = c(3, 1), nrow = 1)
+ggsave('result/fig/drug_rank.png', pic_drug, width = 8, height = 4)
 
 # ggsave('result/pic_drug.png', pic_drug, width = 8, height = 6)
 
-stat_ccle = cor.test(cv_all$ic50, cv_all$pred, method = 'spearman')
-pic_density_ccle = cv_all |> 
-  slice_sample(n = 100000) |> 
-  ggplot(aes(ic50, pred)) +
-  geom_pointdensity(adjust = 0.1, alpha = 0.7) +
-  geom_text(aes(x, y, label = label), data = tibble(x = -4, y = 9, label = sprintf('Spearman\'s r = %.3f', stat_ccle$estimate)), inherit.aes = F) +
-  # geom_smooth(method = 'lm', formula = y~x, se = TRUE, linewidth = 2, show.legend = FALSE, color = "black", alpha = 0.5) +
-  scale_color_viridis() + 
-  xlab('Measured LN IC50(CCLE)') +
-  ylab('Predicted LN IC50(CCLE)') +
-  theme_classic() +
-  theme(legend.position = 'none')
+## sreen ----
 
-ggsave('result/pic_density_ccle.png', pic_density_ccle, width = 4, height = 4)
+drugs = read_tsv('Dataset/codebook/drug_item.txt')$drug
+ccle_meta = read_tsv('Dataset/sample/CCLE_meta.txt')
+gdsc_meta = read_tsv('Dataset/sample/GDSC_meta.txt')
+
+### generate ----
+
+#### ccle ----
+
+ccle = read_csv('Dataset/sample/CCLE.csv')
+
+cell_glioma_ccle = ccle_meta |> 
+  filter(Histology == 'glioma') |> 
+  pull(CCLE_ID) |> 
+  str_split('_', 2) |> 
+  map_chr(`[[`, 1) |> 
+  unique()
+
+drug_tested_ccle = ccle |> 
+  filter(Cell %in% cell_glioma_ccle) |> 
+  pull(Drug) |> 
+  unique()
+
+drug_untested_ccle = setdiff(drugs, drug_tested_ccle)
+# expand_grid(Cell = cell_glioma_ccle, Drug = drug_untested_ccle, IC50 = 0) |> 
+#   write_csv('Dataset/generated/CCLE_generated.csv')
+
+#### gdsc ----
+
+gdsc = read_csv('Dataset/sample/GDSC2.csv')
+
+cell_glioma_gdsc = gdsc_meta |> 
+  filter(TCGA_DESC == 'GBM') |> 
+  mutate(COSMIC_ID = paste0('COSMIC_', COSMIC_ID)) |> 
+  pull(COSMIC_ID) |> 
+  unique()
+
+drug_tested_gdsc = gdsc |> 
+  filter(Cell %in% cell_glioma_gdsc) |> 
+  pull(Drug) |> 
+  unique()
+
+drug_untested_gdsc = setdiff(drugs, drug_tested_gdsc)
+# expand_grid(Cell = cell_glioma_gdsc, Drug = drug_untested_gdsc, IC50 = 0) |> 
+#   write_csv('Dataset/generated/GDSC_generated.csv')
+
+### select ----
+
+#### ccle ----
+
+screen_ccle = read_csv('result/screen_CCLE.csv') |> 
+  separate(sample, c('cell', 'drug'), sep = '\t')
+
+summary_ccle = screen_ccle |> 
+  group_by(drug) |> 
+  summarise(mean = mean(pred), sd = sd(pred)) |> 
+  arrange(mean, sd)
+
+#### gdsc ----
+
+screen_gdsc = read_csv('result/screen_GDSC.csv') |> 
+  separate(sample, c('cell', 'drug'), sep = '\t')
+
+screen_gdsc |> 
+  group_by(drug) |> 
+  summarise(mean = mean(pred), sd = sd(pred)) |> 
+  arrange(mean, sd) |> 
+  View()
+
+
+patch_gdsc = gdsc_meta |> 
+  filter(TCGA_DESC == 'GBM') |> 
+  filter(DRUG_NAME %in% drug_untested_ccle) |> 
+  rename(drug = DRUG_NAME) |> 
+  group_by(drug) |> 
+  summarise(mean_real = mean(LN_IC50), sd_real = sd(LN_IC50))
+
+### one in another ----
+
+cell_glioma_ccle = ccle_meta |> 
+  filter(Histology == 'glioma') |> 
+  pull(CCLE_ID) |> 
+  str_split('_', 2) |> 
+  map_chr(`[[`, 1) |> 
+  unique()
+
+drug_tested_ccle = ccle |> 
+  filter(Cell %in% cell_glioma_ccle) |> 
+  pull(Drug) |> 
+  unique()
+
+drug_untested_ccle = setdiff(drugs, drug_tested_ccle)
+
+untested_label = gdsc_meta |> 
+  filter(TCGA_DESC == 'GBM') |> 
+  filter(DRUG_NAME %in% drug_untested_ccle) |> 
+  select(drug = DRUG_NAME, value = LN_IC50) |> 
+  group_nest(drug) |> 
+  pull(data, drug)
+
+untested_pred = read_csv('result/screen_CCLE.csv') |> 
+  separate(sample, c('cell', 'drug'), sep = '\t') |> 
+  select(drug, value = pred) |> 
+  group_nest(drug) |> 
+  pull(data, drug)
+
+drug_untested = intersect(names(untested_label), drug_untested_ccle) |> setdiff(c('KRAS (G12C) Inhibitor-12', 'Methotrexate'))
+lst_dp_screen = map2(
+  untested_label[drug_untested], untested_pred[drug_untested], 
+  \(x_, y_) bind_rows(x_ |> mutate(dataset = 'GDSC'), y_ |> mutate(dataset = 'CCLE'))
+) |> imap(
+  \(x_, ind_) x_ |> mutate(drug = ind_)
+)
+
+theme_dropy = function() {
   
-stat_gdsc = cor.test(cv_all_gdsc$ic50, cv_all_gdsc$pred, method = 'spearman')
-pic_density_gdsc = cv_all_gdsc |> 
-  slice_sample(n = 100000) |> 
-  ggplot(aes(ic50, pred)) +
-  geom_pointdensity(adjust = 0.1, alpha = 0.7) +
-  geom_text(aes(x, y, label = label), data = tibble(x = -4, y = 9, label = sprintf('Spearman\'s r = %.3f', stat_gdsc$estimate)), inherit.aes = F) +
-  # geom_smooth(method = 'lm', formula = y~x, se = TRUE, linewidth = 2, show.legend = FALSE, color = "black", alpha = 0.5) +
-  scale_color_viridis() + 
-  xlab('Measured LN IC50(GDSC)') +
-  ylab('Predicted LN IC50(GDSC)') +
-  theme_classic() +
-  theme(legend.position = 'none')
+  theme(
+    axis.line.y = element_blank(), 
+    axis.text.y = element_blank(), 
+    axis.title.y = element_blank(), 
+    axis.ticks.y = element_blank()
+  )
+  
+}
 
-ggsave('result/pic_density_gdsc.png', pic_density_gdsc, width = 4, height = 4)
+lst_range = map(lst_dp_screen, \(x_) range(x_[['value']]))
+range_plot = c(floor(min(sapply(lst_range, `[[`, 1))), ceiling(max(sapply(lst_range, `[[`, 2))))
 
+lst_pic_screen = lst_dp_screen |> 
+  imap(
+    \(dp_, drug_) {
+      
+      drug_ = switch(
+        drug_, 
+        `Mycophenolic acid` = 'MPA', 
+        `Picolinici-acid` = 'PA', 
+        drug_
+      )
+      
+      dp_ |> 
+        ggplot(aes(dataset, value, color = dataset)) +
+        geom_boxplot(width = 0.4, fill = NA, outlier.shape = NA) +
+        geom_jitter() +
+        xlab(drug_) +
+        ylab('LN IC50') +
+        scale_y_continuous(limits = range_plot, breaks = seq(range_plot[1], range_plot[2], 2)) +
+        scale_color_manual(values = color_morandi) +
+        theme_classic() +
+        theme(
+          axis.text.x = element_blank(), 
+          axis.ticks.x = element_blank(), 
+          axis.title.x = element_text(hjust = 0.5, size = 8), 
+          legend.position = 'none'
+        )
+    }
+  ) |> biased_map(\(x_)  x_ + theme_dropy(), luckyOnes_ = 1, reverse_ = T)
+
+lgd_screen = ggdraw(
+  get_plot_component(
+    lst_dp_screen[[1]] |> 
+      ggplot(aes(dataset, value, color = dataset)) +
+      geom_jitter() +
+      scale_color_manual(values = color_morandi) +
+      guides(color = guide_legend(title = NULL, )) + 
+      theme_bw() +
+      theme(
+        legend.title = element_blank(), 
+        legend.position = 'bottom', 
+        legend.background = element_rect(fill = 'white')
+      ), 
+    'guide-box', return_all = T
+  )[[3]]
+)
+pic_screen = plot_grid(plotlist = lst_pic_screen, nrow = 1, rel_widths = c(1.5, rep(1, length(lst_pic) - 1)))
+
+### screen-summary ----
+
+ggsave('result/fig/screen_boxplot.png', pic_screen, width = 12, height = 3)
+ggsave('result/fig/screen_lgd.png', lgd_screen, width = 2, height = 1)
 
 # trash ----
+
 
 ccle = read_csv('Dataset/sample/CCLE.csv')
 gdsc = read_csv('Dataset/sample/GDSC.csv')
